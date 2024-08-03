@@ -6,7 +6,7 @@
 
 #include <stdint.h> // for fixed width integer state machine variables below
 
-typedef enum BeButtonSm_EventId
+typedef enum __attribute__((packed)) BeButtonSm_EventId
 {
     BeButtonSm_EventId_DO = 0, // The `do` event is special. State event handlers do not consume this event (ancestors all get it too) unless a transition occurs.
 } BeButtonSm_EventId;
@@ -16,7 +16,7 @@ enum
     BeButtonSm_EventIdCount = 1
 };
 
-typedef enum BeButtonSm_StateId
+typedef enum __attribute__((packed)) BeButtonSm_StateId
 {
     BeButtonSm_StateId_ROOT = 0,
     BeButtonSm_StateId_PRESSED_DEBOUNCE = 1,

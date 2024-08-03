@@ -101,6 +101,6 @@ RenderConfig.AutoExpandedVars = """
 
 # Uncomment the below line to potentially save a byte or two of RAM per state machine
 # by telling GCC to use the smallest enumeration integer type possible.
-# RenderConfig.C.CEnumDeclarer = "typedef enum __attribute__((packed)) {enumName}"
+RenderConfig.C.CEnumDeclarer = "typedef enum __attribute__((packed)) {enumName}"
 '/
 @enduml
