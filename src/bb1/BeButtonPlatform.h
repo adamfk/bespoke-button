@@ -15,8 +15,6 @@ typedef uint8_t BeButtonPin;
 #endif
 
 
-
-
 // We purposely don't do pin initialization here. let user do it. there are many ways to initialize a pin across platforms.
 
 // returns true if pin is "active"

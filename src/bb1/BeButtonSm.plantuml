@@ -75,7 +75,6 @@ PRESSED_REPEAT --> PRESSED_REPEAT: [timer_ms > 250]
 /'! $CONFIG : toml
 SmRunnerSettings.transpilerId = "C99"
 
-RenderConfig.C.CFileExtension = ".c"
 RenderConfig.C.HFileIncludes = """
     #include <stdint.h> // for fixed width integer state machine variables below
     """
