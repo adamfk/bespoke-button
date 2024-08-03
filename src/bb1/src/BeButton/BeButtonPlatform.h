@@ -6,7 +6,9 @@
 extern "C" {
 #endif
 
+#ifndef ARDUINO
 #define ARDUINO // FIXME - remove this after initial simulation testing
+#endif
 
 ///////////////////////////////// ARDUINO /////////////////////////////////
 #ifdef ARDUINO
