@@ -1,5 +1,5 @@
 #include <assert.h>
-#include "ButtonSm.h"
+#include "BeButton.h"
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -7,8 +7,8 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 // button state machines
-static ButtonSm left_button;
-static ButtonSm right_button;
+static BeButton left_button;
+static BeButton right_button;
 
 // Millisecond time when loop() was ran last.
 // This is used to calculate the elapsed time between loops.
@@ -34,7 +34,11 @@ void setup()
   setup_button(&right_button, 4);
 }
 
-
+static void setup_button(BeButton * button, const uint8_t pin)
+{
+  pinMode(pin, INPUT_PULLUP);
+  BeButton_setup(button, pin);
+}
 
 
 
@@ -46,8 +50,8 @@ void loop()
   last_loop_ms = now_ms;
 
   // update buttons
-  update_button(&left_button, elapsed_time_ms);
-  update_button(&right_button, elapsed_time_ms);
+  BeButton_update(&left_button, elapsed_time_ms);
+  BeButton_update(&right_button, elapsed_time_ms);
 
   // check for and print button events
   print_button_events(&left_button, "left");
@@ -58,48 +62,27 @@ void loop()
 
 
 /**
- * Reads button pin, updates button state machine and timer.
- */
-static void update_button(ButtonSm * button_sm, uint32_t elapsed_time_ms)
-{
-  // read pin status and set input to state machine
-  const uint8_t pin = button_sm->vars.pin;
-  button_sm->vars.input_active = (digitalRead(pin) == LOW);
-
-  // update button timer
-  button_sm->vars.timer_ms += elapsed_time_ms;
-
-  // run state machine
-  ButtonSm_dispatch_event(button_sm, ButtonSm_EventId_DO);
-}
-
-
-/**
  * Checks if a button event occurred, clears the event and prints it to serial.
  */
-static void print_button_events(ButtonSm * sm, const char *button_name)
+static void print_button_events(BeButton * button, const char *button_name)
 {
-  if (sm->vars.output_press_event)
+  if (BeButton_pop_press_event(button))
   {
-    sm->vars.output_press_event = false;
     print_button_event(button_name, "press");
   }
 
-  if (sm->vars.output_long_event)
+  if (BeButton_pop_long_event(button))
   {
-    sm->vars.output_long_event = false;
     print_button_event(button_name, "long");
   }
 
-  if (sm->vars.output_repeat_event)
+  if (BeButton_pop_repeat_event(button))
   {
-    sm->vars.output_repeat_event = false;
     print_button_event(button_name, "repeat");
   }
 
-  if (sm->vars.output_release_event)
+  if (BeButton_pop_release_event(button))
   {
-    sm->vars.output_release_event = false;
     print_button_event(button_name, "release");
     Serial.println();
   }

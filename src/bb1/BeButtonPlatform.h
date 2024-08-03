@@ -1,10 +1,27 @@
 #pragma once
 #include <stdint.h>
+#include <stdbool.h>
 
-typedef struct BeButtonPin {
-    // uint8_t port;
-    uint8_t pin;
-} BeButtonPin;
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-extern void BeButton_init_pin(BeButtonPin const * pin);
+#define ARDUINO // FIXME - remove this after initial simulation testing
 
+///////////////////////////////// ARDUINO /////////////////////////////////
+#ifdef ARDUINO
+// for Arduino
+typedef uint8_t BeButtonPin;
+#endif
+
+
+
+
+// We purposely don't do pin initialization here. let user do it. there are many ways to initialize a pin across platforms.
+
+// returns true if pin is "active"
+bool BeButtonPlatform_is_pin_active(const BeButtonPin pin);
+
+#ifdef __cplusplus
+}
+#endif
