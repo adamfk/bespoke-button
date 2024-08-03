@@ -1,3 +1,16 @@
+# BespokeButton project
+
+
+## TODO
+- rename bb1 files to BeButton1... etc
+
+
+-----------------------------
+
+# OLD STUFF BELOW
+
+
+
 > Assumes that you have gone through basic StateSmith tutorial 3 already.
 
 # Design

@@ -59,9 +59,6 @@ typedef struct BeButtonSm_Vars
     uint8_t output_press: 1;
     uint8_t output_long: 1;
     uint8_t output_repeat: 1;
-    
-    // not used by state machine, but this is a convenient place to store the pin number
-    uint8_t pin;
 } BeButtonSm_Vars;
 
 
