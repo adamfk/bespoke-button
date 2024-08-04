@@ -38,6 +38,7 @@ state RELEASED_STABLE {
     }
     [*] -> SEQUENCE
 }
+state WAIT_FIRST_PRESS
 
 state PRESSED_DEBOUNCE <<press_style>> {
     note "Event will clear T1 in post.\nThis allows checking press duty cycle\nif repeat is disabled." as N1
@@ -67,7 +68,9 @@ state PRESSED_STABLE <<press_style>> {
 STARTUP_DELAY -down-> INIT_CHOICE: [t2_ms > 25]
 
 INIT_CHOICE -left-> HELD_AT_START: [input_active]
-INIT_CHOICE --> RELEASED_STABLE: else
+INIT_CHOICE --> WAIT_FIRST_PRESS: else
+
+WAIT_FIRST_PRESS --> PRESSED_DEBOUNCE: [input_active]
 
 HELD_AT_START: enter / output_press = true;
 HELD_AT_START: 1. do / t2_ms = 0;
@@ -83,7 +86,7 @@ RELEASED_STABLE -down-> PRESSED_DEBOUNCE: [input_active]
 
 SEQUENCE --> SEQUENCE_END: [t2_ms > 500]
 
-SEQUENCE_END: enter [press_count > 0] / output_seq_end_event = true;
+SEQUENCE_END: enter / output_seq_end_event = true;
 
 
 ' Wait for debounce time and then go to stable state.
