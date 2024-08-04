@@ -6,13 +6,12 @@
 extern "C" {
 #endif
 
-#ifndef ARDUINO
-#define ARDUINO // FIXME - remove this after initial simulation testing
-#endif
-
 ///////////////////////////////// ARDUINO /////////////////////////////////
 #ifdef ARDUINO
 // for Arduino
+typedef uint8_t BeButton2Pin;
+#else
+// just assume uint8_t for now
 typedef uint8_t BeButton2Pin;
 #endif
 

@@ -11,12 +11,22 @@ skinparam state {
 ' Note: StateSmith treats state names and events as case insensitive.
 ' More info: https://github.com/StateSmith/StateSmith/wiki/PlantUML
 
-state INIT
+state STARTUP_DELAY  {
+    note "Wait for I/O to be ready..." as N1
+}
 state INIT_CHOICE<<choice>>
 
 state HELD_AT_START {
-    note "Inspect state ID to detect this" as N1
+    note "Inspect state ID to detect this." as N1
 }
+
+note top of HELD_AT_START
+    T1 is used to time button press duration.
+    T2 is used to time button release duration.
+    T2 can be checked by user if repeat is disabled.
+    Repeat state also uses T2, but you could give it
+    its own timer if you want.
+end note
 
 state RELEASED_DEBOUNCE {
     note "Event will clear T2 in post.\nThis allows checking press duty cycle\nif repeat is disabled." as N1
@@ -47,21 +57,21 @@ state PRESSED_STABLE <<press_style>> {
 }
 
 
-[*] -> INIT
+[*] -> STARTUP_DELAY
 
 
 
 ' ///////////////////////// STATE HANDLERS /////////////////////////
 ' Syntax: https://github.com/StateSmith/StateSmith/wiki/Behaviors
 
-INIT: enter / t2_ms = 0;
-INIT -down-> INIT_CHOICE: [t2_ms > 25]
+STARTUP_DELAY -down-> INIT_CHOICE: [t2_ms > 25]
 
 INIT_CHOICE -left-> HELD_AT_START: [input_active]
 INIT_CHOICE --> RELEASED_STABLE: else
 
 HELD_AT_START: enter / output_press = true;
-HELD_AT_START --> RELEASED_DEBOUNCE: [! input_active] / t2_ms = 0;
+HELD_AT_START: 1. do / t2_ms = 0;
+HELD_AT_START --> RELEASED_DEBOUNCE: [! input_active]
 
 ' Wait for debounce time and then go to stable state.
 RELEASED_DEBOUNCE: enter / output_release_event = true;
@@ -110,7 +120,11 @@ PRESSED_REPEAT -up-> NO_REPEAT: 1. [disable_repeat]
 SmRunnerSettings.transpilerId = "C99"
 
 RenderConfig.C.HFileIncludes = """
-    #include <stdint.h> // for fixed width integer state machine variables below
+    // Let other compilers ignore gcc specific attributes.
+    // You can also disable GCC packed attributes by removing StateSmith setting `RenderConfig.C.CEnumDeclarer`.
+    #if !defined(__GNUC__) && !defined(__clang__)
+    #define __attribute__(x) /* nothing */
+    #endif
     """
 RenderConfig.AutoExpandedVars = """
     //////////////////////////////////////////

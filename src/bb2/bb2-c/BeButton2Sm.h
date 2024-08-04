@@ -4,7 +4,11 @@
 #pragma once
 #include <stdint.h>
 
-#include <stdint.h> // for fixed width integer state machine variables below
+// Let other compilers ignore gcc specific attributes.
+// You can also disable GCC packed attributes by removing StateSmith setting `RenderConfig.C.CEnumDeclarer`.
+#if !defined(__GNUC__) && !defined(__clang__)
+#define __attribute__(x) /* nothing */
+#endif
 
 typedef enum __attribute__((packed)) BeButton2Sm_EventId
 {
@@ -20,18 +24,18 @@ typedef enum __attribute__((packed)) BeButton2Sm_StateId
 {
     BeButton2Sm_StateId_ROOT = 0,
     BeButton2Sm_StateId_HELD_AT_START = 1,
-    BeButton2Sm_StateId_INIT = 2,
-    BeButton2Sm_StateId_PRESSED_DEBOUNCE = 3,
-    BeButton2Sm_StateId_PRESSED_STABLE = 4,
-    BeButton2Sm_StateId_CONFIRM_LONG = 5,
-    BeButton2Sm_StateId_PRESSED_LONG = 6,
-    BeButton2Sm_StateId_DELAY_1ST_REPEAT = 7,
-    BeButton2Sm_StateId_NO_REPEAT = 8,
-    BeButton2Sm_StateId_PRESSED_REPEAT = 9,
-    BeButton2Sm_StateId_RELEASED_DEBOUNCE = 10,
-    BeButton2Sm_StateId_RELEASED_STABLE = 11,
-    BeButton2Sm_StateId_SEQUENCE = 12,
-    BeButton2Sm_StateId_SEQUENCE_END = 13,
+    BeButton2Sm_StateId_PRESSED_DEBOUNCE = 2,
+    BeButton2Sm_StateId_PRESSED_STABLE = 3,
+    BeButton2Sm_StateId_CONFIRM_LONG = 4,
+    BeButton2Sm_StateId_PRESSED_LONG = 5,
+    BeButton2Sm_StateId_DELAY_1ST_REPEAT = 6,
+    BeButton2Sm_StateId_NO_REPEAT = 7,
+    BeButton2Sm_StateId_PRESSED_REPEAT = 8,
+    BeButton2Sm_StateId_RELEASED_DEBOUNCE = 9,
+    BeButton2Sm_StateId_RELEASED_STABLE = 10,
+    BeButton2Sm_StateId_SEQUENCE = 11,
+    BeButton2Sm_StateId_SEQUENCE_END = 12,
+    BeButton2Sm_StateId_STARTUP_DELAY = 13,
 } BeButton2Sm_StateId;
 
 enum

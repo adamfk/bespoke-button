@@ -216,11 +216,9 @@
         <pre class="mermaid">
 stateDiagram
 
-INIT
+STARTUP_DELAY
 
-INIT : INIT
-
-INIT : enter / #123; t2_ms = 0#59; #125;
+STARTUP_DELAY : STARTUP_DELAY
 
 state ROOT.(ChoicePoint)(INIT_CHOICE) <<choice>>
 
@@ -229,6 +227,8 @@ HELD_AT_START
 HELD_AT_START : HELD_AT_START
 
 HELD_AT_START : enter / #123; output_press = true#59; #125;
+
+HELD_AT_START : 1. do / #123; t2_ms = 0#59; #125;
 
 RELEASED_DEBOUNCE
 
@@ -300,13 +300,13 @@ state PRESSED_STABLE {
 
 state "$initial_state" as ROOT.(InitialState)
 
-INIT --> ROOT.(ChoicePoint)(INIT_CHOICE) : do [t2_ms > 25]
+STARTUP_DELAY --> ROOT.(ChoicePoint)(INIT_CHOICE) : do [t2_ms > 25]
 
 ROOT.(ChoicePoint)(INIT_CHOICE) --> HELD_AT_START : [input_active]
 
 ROOT.(ChoicePoint)(INIT_CHOICE) --> RELEASED_STABLE : else
 
-HELD_AT_START --> RELEASED_DEBOUNCE : do [! input_active] / #123; t2_ms = 0#59; #125;
+HELD_AT_START --> RELEASED_DEBOUNCE : do [! input_active]
 
 RELEASED_DEBOUNCE --> RELEASED_STABLE : do [t2_ms > 50]
 
@@ -334,7 +334,7 @@ PRESSED_LONG.(InitialState) --> DELAY_1ST_REPEAT : else
 
 PRESSED_LONG.(InitialState) --> NO_REPEAT : [disable_repeat]
 
-ROOT.(InitialState) --> INIT
+ROOT.(InitialState) --> STARTUP_DELAY
 
 
 
@@ -390,18 +390,18 @@ evaluateGuard = null;
     {
         ROOT : 0,
         HELD_AT_START : 1,
-        INIT : 2,
-        PRESSED_DEBOUNCE : 3,
-        PRESSED_STABLE : 4,
-        CONFIRM_LONG : 5,
-        PRESSED_LONG : 6,
-        DELAY_1ST_REPEAT : 7,
-        NO_REPEAT : 8,
-        PRESSED_REPEAT : 9,
-        RELEASED_DEBOUNCE : 10,
-        RELEASED_STABLE : 11,
-        SEQUENCE : 12,
-        SEQUENCE_END : 13,
+        PRESSED_DEBOUNCE : 2,
+        PRESSED_STABLE : 3,
+        CONFIRM_LONG : 4,
+        PRESSED_LONG : 5,
+        DELAY_1ST_REPEAT : 6,
+        NO_REPEAT : 7,
+        PRESSED_REPEAT : 8,
+        RELEASED_DEBOUNCE : 9,
+        RELEASED_STABLE : 10,
+        SEQUENCE : 11,
+        SEQUENCE_END : 12,
+        STARTUP_DELAY : 13,
     }
     static { Object.freeze(this.StateId); }
     
@@ -435,18 +435,18 @@ evaluateGuard = null;
             // ROOT.<InitialState> is a pseudo state and cannot have an `enter` trigger.
             
             // ROOT.<InitialState> behavior
-            // uml: / { this.tracer?.edgeTransition("edge17"); } TransitionTo(INIT)
+            // uml: / { this.tracer?.edgeTransition("edge17"); } TransitionTo(STARTUP_DELAY)
             {
                 // Step 1: Exit states until we reach `ROOT` state (Least Common Ancestor for transition). Already at LCA, no exiting required.
                 
                 // Step 2: Transition action: `this.tracer?.edgeTransition("edge17");`.
                 this.tracer?.edgeTransition("edge17");
                 
-                // Step 3: Enter/move towards transition target `INIT`.
-                this.#INIT_enter();
+                // Step 3: Enter/move towards transition target `STARTUP_DELAY`.
+                this.#STARTUP_DELAY_enter();
                 
                 // Step 4: complete transition. Ends event dispatch. No other behaviors are checked.
-                this.stateId = BeButton2Sm.StateId.INIT;
+                this.stateId = BeButton2Sm.StateId.STARTUP_DELAY;
                 // No ancestor handles event. Can skip nulling `ancestorEventHandler`.
                 return;
             } // end of behavior for ROOT.<InitialState>
@@ -536,14 +536,24 @@ evaluateGuard = null;
         // No ancestor state handles `do` event.
         
         // HELD_AT_START behavior
-        // uml: do [this.tracer?.log("🛡️ User evaluating guard: " + "! input_active") || this.evaluateGuard("! input_active")] / { this.tracer?.log("⚡ FSM would execute action: " + "t2_ms = 0;");this.tracer?.edgeTransition("edge3"); } TransitionTo(RELEASED_DEBOUNCE)
+        // uml: 1. do / { this.tracer?.log("⚡ FSM would execute action: " + "t2_ms = 0;"); }
+        {
+            // Step 1: execute action `this.tracer?.log("⚡ FSM would execute action: " + "t2_ms = 0;");`
+            this.tracer?.log("⚡ FSM would execute action: " + "t2_ms = 0;");
+            
+            // Step 2: determine if ancestor gets to handle event next.
+            // Don't consume special `do` event.
+        } // end of behavior for HELD_AT_START
+        
+        // HELD_AT_START behavior
+        // uml: do [this.tracer?.log("🛡️ User evaluating guard: " + "! input_active") || this.evaluateGuard("! input_active")] / { this.tracer?.edgeTransition("edge3"); } TransitionTo(RELEASED_DEBOUNCE)
         if (this.tracer?.log("🛡️ User evaluating guard: " + "! input_active") || this.evaluateGuard("! input_active"))
         {
             // Step 1: Exit states until we reach `ROOT` state (Least Common Ancestor for transition).
             this.#HELD_AT_START_exit();
             
-            // Step 2: Transition action: `this.tracer?.log("⚡ FSM would execute action: " + "t2_ms = 0;");this.tracer?.edgeTransition("edge3");`.
-            this.tracer?.log("⚡ FSM would execute action: " + "t2_ms = 0;");this.tracer?.edgeTransition("edge3");
+            // Step 2: Transition action: `this.tracer?.edgeTransition("edge3");`.
+            this.tracer?.edgeTransition("edge3");
             
             // Step 3: Enter/move towards transition target `RELEASED_DEBOUNCE`.
             this.#RELEASED_DEBOUNCE_enter();
@@ -553,99 +563,6 @@ evaluateGuard = null;
             // No ancestor handles event. Can skip nulling `ancestorEventHandler`.
             return;
         } // end of behavior for HELD_AT_START
-    }
-    
-    
-    ////////////////////////////////////////////////////////////////////////////////
-    // event handlers for state INIT
-    ////////////////////////////////////////////////////////////////////////////////
-    
-    #INIT_enter()
-    {
-        // setup trigger/event handlers
-        this.#currentStateExitHandler = this.#INIT_exit;
-        this.#currentEventHandlers[BeButton2Sm.EventId.DO] = this.#INIT_do;
-        
-        // INIT behavior
-        // uml: enter / { this.tracer?.enterState('INIT'); }
-        {
-            // Step 1: execute action `this.tracer?.enterState('INIT');`
-            this.tracer?.enterState('INIT');
-        } // end of behavior for INIT
-        
-        // INIT behavior
-        // uml: enter / { this.tracer?.log("⚡ FSM would execute action: " + "t2_ms = 0;"); }
-        {
-            // Step 1: execute action `this.tracer?.log("⚡ FSM would execute action: " + "t2_ms = 0;");`
-            this.tracer?.log("⚡ FSM would execute action: " + "t2_ms = 0;");
-        } // end of behavior for INIT
-    }
-    
-    #INIT_exit()
-    {
-        // INIT behavior
-        // uml: exit / { this.tracer?.exitState('INIT'); }
-        {
-            // Step 1: execute action `this.tracer?.exitState('INIT');`
-            this.tracer?.exitState('INIT');
-        } // end of behavior for INIT
-        
-        // adjust function pointers for this state's exit
-        this.#currentStateExitHandler = this.#ROOT_exit;
-        this.#currentEventHandlers[BeButton2Sm.EventId.DO] = null;  // no ancestor listens to this event
-    }
-    
-    #INIT_do()
-    {
-        // No ancestor state handles `do` event.
-        
-        // INIT behavior
-        // uml: do [this.tracer?.log("🛡️ User evaluating guard: " + "t2_ms > 25") || this.evaluateGuard("t2_ms > 25")] / { this.tracer?.edgeTransition("edge0"); } TransitionTo(ROOT.<ChoicePoint>(INIT_CHOICE))
-        if (this.tracer?.log("🛡️ User evaluating guard: " + "t2_ms > 25") || this.evaluateGuard("t2_ms > 25"))
-        {
-            // Step 1: Exit states until we reach `ROOT` state (Least Common Ancestor for transition).
-            this.#INIT_exit();
-            
-            // Step 2: Transition action: `this.tracer?.edgeTransition("edge0");`.
-            this.tracer?.edgeTransition("edge0");
-            
-            // Step 3: Enter/move towards transition target `ROOT.<ChoicePoint>(INIT_CHOICE)`.
-            // ROOT.<ChoicePoint>(INIT_CHOICE) is a pseudo state and cannot have an `enter` trigger.
-            
-            // ROOT.<ChoicePoint>(INIT_CHOICE) behavior
-            // uml: [this.tracer?.log("🛡️ User evaluating guard: " + "input_active") || this.evaluateGuard("input_active")] / { this.tracer?.edgeTransition("edge1"); } TransitionTo(HELD_AT_START)
-            if (this.tracer?.log("🛡️ User evaluating guard: " + "input_active") || this.evaluateGuard("input_active"))
-            {
-                // Step 1: Exit states until we reach `ROOT` state (Least Common Ancestor for transition). Already at LCA, no exiting required.
-                
-                // Step 2: Transition action: `this.tracer?.edgeTransition("edge1");`.
-                this.tracer?.edgeTransition("edge1");
-                
-                // Step 3: Enter/move towards transition target `HELD_AT_START`.
-                this.#HELD_AT_START_enter();
-                
-                // Step 4: complete transition. Ends event dispatch. No other behaviors are checked.
-                this.stateId = BeButton2Sm.StateId.HELD_AT_START;
-                // No ancestor handles event. Can skip nulling `ancestorEventHandler`.
-                return;
-            } // end of behavior for ROOT.<ChoicePoint>(INIT_CHOICE)
-            
-            // ROOT.<ChoicePoint>(INIT_CHOICE) behavior
-            // uml: else / { this.tracer?.edgeTransition("edge2"); } TransitionTo(RELEASED_STABLE)
-            {
-                // Step 1: Exit states until we reach `ROOT` state (Least Common Ancestor for transition). Already at LCA, no exiting required.
-                
-                // Step 2: Transition action: `this.tracer?.edgeTransition("edge2");`.
-                this.tracer?.edgeTransition("edge2");
-                
-                // Step 3: Enter/move towards transition target `RELEASED_STABLE`.
-                this.#RELEASED_STABLE_enter();
-                
-                // Finish transition by calling pseudo state transition function.
-                this.#RELEASED_STABLE_InitialState_transition();
-                return; // event processing immediately stops when a transition finishes. No other behaviors for this state are checked.
-            } // end of behavior for ROOT.<ChoicePoint>(INIT_CHOICE)
-        } // end of behavior for INIT
     }
     
     
@@ -1352,6 +1269,92 @@ evaluateGuard = null;
         this.#currentStateExitHandler = this.#RELEASED_STABLE_exit;
     }
     
+    
+    ////////////////////////////////////////////////////////////////////////////////
+    // event handlers for state STARTUP_DELAY
+    ////////////////////////////////////////////////////////////////////////////////
+    
+    #STARTUP_DELAY_enter()
+    {
+        // setup trigger/event handlers
+        this.#currentStateExitHandler = this.#STARTUP_DELAY_exit;
+        this.#currentEventHandlers[BeButton2Sm.EventId.DO] = this.#STARTUP_DELAY_do;
+        
+        // STARTUP_DELAY behavior
+        // uml: enter / { this.tracer?.enterState('STARTUP_DELAY'); }
+        {
+            // Step 1: execute action `this.tracer?.enterState('STARTUP_DELAY');`
+            this.tracer?.enterState('STARTUP_DELAY');
+        } // end of behavior for STARTUP_DELAY
+    }
+    
+    #STARTUP_DELAY_exit()
+    {
+        // STARTUP_DELAY behavior
+        // uml: exit / { this.tracer?.exitState('STARTUP_DELAY'); }
+        {
+            // Step 1: execute action `this.tracer?.exitState('STARTUP_DELAY');`
+            this.tracer?.exitState('STARTUP_DELAY');
+        } // end of behavior for STARTUP_DELAY
+        
+        // adjust function pointers for this state's exit
+        this.#currentStateExitHandler = this.#ROOT_exit;
+        this.#currentEventHandlers[BeButton2Sm.EventId.DO] = null;  // no ancestor listens to this event
+    }
+    
+    #STARTUP_DELAY_do()
+    {
+        // No ancestor state handles `do` event.
+        
+        // STARTUP_DELAY behavior
+        // uml: do [this.tracer?.log("🛡️ User evaluating guard: " + "t2_ms > 25") || this.evaluateGuard("t2_ms > 25")] / { this.tracer?.edgeTransition("edge0"); } TransitionTo(ROOT.<ChoicePoint>(INIT_CHOICE))
+        if (this.tracer?.log("🛡️ User evaluating guard: " + "t2_ms > 25") || this.evaluateGuard("t2_ms > 25"))
+        {
+            // Step 1: Exit states until we reach `ROOT` state (Least Common Ancestor for transition).
+            this.#STARTUP_DELAY_exit();
+            
+            // Step 2: Transition action: `this.tracer?.edgeTransition("edge0");`.
+            this.tracer?.edgeTransition("edge0");
+            
+            // Step 3: Enter/move towards transition target `ROOT.<ChoicePoint>(INIT_CHOICE)`.
+            // ROOT.<ChoicePoint>(INIT_CHOICE) is a pseudo state and cannot have an `enter` trigger.
+            
+            // ROOT.<ChoicePoint>(INIT_CHOICE) behavior
+            // uml: [this.tracer?.log("🛡️ User evaluating guard: " + "input_active") || this.evaluateGuard("input_active")] / { this.tracer?.edgeTransition("edge1"); } TransitionTo(HELD_AT_START)
+            if (this.tracer?.log("🛡️ User evaluating guard: " + "input_active") || this.evaluateGuard("input_active"))
+            {
+                // Step 1: Exit states until we reach `ROOT` state (Least Common Ancestor for transition). Already at LCA, no exiting required.
+                
+                // Step 2: Transition action: `this.tracer?.edgeTransition("edge1");`.
+                this.tracer?.edgeTransition("edge1");
+                
+                // Step 3: Enter/move towards transition target `HELD_AT_START`.
+                this.#HELD_AT_START_enter();
+                
+                // Step 4: complete transition. Ends event dispatch. No other behaviors are checked.
+                this.stateId = BeButton2Sm.StateId.HELD_AT_START;
+                // No ancestor handles event. Can skip nulling `ancestorEventHandler`.
+                return;
+            } // end of behavior for ROOT.<ChoicePoint>(INIT_CHOICE)
+            
+            // ROOT.<ChoicePoint>(INIT_CHOICE) behavior
+            // uml: else / { this.tracer?.edgeTransition("edge2"); } TransitionTo(RELEASED_STABLE)
+            {
+                // Step 1: Exit states until we reach `ROOT` state (Least Common Ancestor for transition). Already at LCA, no exiting required.
+                
+                // Step 2: Transition action: `this.tracer?.edgeTransition("edge2");`.
+                this.tracer?.edgeTransition("edge2");
+                
+                // Step 3: Enter/move towards transition target `RELEASED_STABLE`.
+                this.#RELEASED_STABLE_enter();
+                
+                // Finish transition by calling pseudo state transition function.
+                this.#RELEASED_STABLE_InitialState_transition();
+                return; // event processing immediately stops when a transition finishes. No other behaviors for this state are checked.
+            } // end of behavior for ROOT.<ChoicePoint>(INIT_CHOICE)
+        } // end of behavior for STARTUP_DELAY
+    }
+    
     // Thread safe.
     static stateIdToString(id)
     {
@@ -1359,7 +1362,6 @@ evaluateGuard = null;
         {
             case BeButton2Sm.StateId.ROOT: return "ROOT";
             case BeButton2Sm.StateId.HELD_AT_START: return "HELD_AT_START";
-            case BeButton2Sm.StateId.INIT: return "INIT";
             case BeButton2Sm.StateId.PRESSED_DEBOUNCE: return "PRESSED_DEBOUNCE";
             case BeButton2Sm.StateId.PRESSED_STABLE: return "PRESSED_STABLE";
             case BeButton2Sm.StateId.CONFIRM_LONG: return "CONFIRM_LONG";
@@ -1371,6 +1373,7 @@ evaluateGuard = null;
             case BeButton2Sm.StateId.RELEASED_STABLE: return "RELEASED_STABLE";
             case BeButton2Sm.StateId.SEQUENCE: return "SEQUENCE";
             case BeButton2Sm.StateId.SEQUENCE_END: return "SEQUENCE_END";
+            case BeButton2Sm.StateId.STARTUP_DELAY: return "STARTUP_DELAY";
             default: return "?";
         }
     }

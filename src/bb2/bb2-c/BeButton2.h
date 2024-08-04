@@ -30,50 +30,77 @@ void BeButton2_update(BeButton2 * button, uint32_t elapsed_time_ms);
 
 ///////////////// events //////////////////////
 
-/**
- * @brief Returns true if the press event occurred. Clears the event.
- */
-bool BeButton2_pop_press_event(BeButton2 * button);
+// MUST be read after update function or the event may be lost.
+// Feel free to ignore the event if you don't need it.
+inline static bool BeButton2_get_press_event(BeButton2 * button) {
+    bool result = button->sm.vars.output_press_event;
+    return result;
+}
 
-/**
- * @brief Returns true if the long event occurred. Clears the event.
- */
-bool BeButton2_pop_long_event(BeButton2 * button);
+// MUST be read after update function or the event may be lost.
+// Feel free to ignore the event if you don't need it.
+inline static bool BeButton2_get_long_event(BeButton2 * button) {
+    bool result = button->sm.vars.output_long_event;
+    return result;
+}
 
-/**
- * @brief Returns true if the repeat event occurred. Clears the event.
- */
-bool BeButton2_pop_repeat_event(BeButton2 * button);
+// MUST be read after update function or the event may be lost.
+// Feel free to ignore the event if you don't need it.
+inline static bool BeButton2_get_repeat_event(BeButton2* button) {
+    bool result = button->sm.vars.output_repeat_event;
+    return result;
+}
 
-/**
- * @brief Returns true if the release event occurred. Clears the event.
- */
-bool BeButton2_pop_release_event(BeButton2 * button);
+// MUST be read after update function or the event may be lost.
+// Feel free to ignore the event if you don't need it.
+inline static bool BeButton2_get_release_event(BeButton2* button) {
+    bool result = button->sm.vars.output_release_event;
+    return result;
+}
 
+// MUST be read after update function or the event may be lost.
+// You will probably also want to read the press count if this event is true.
+// Feel free to ignore the event if you don't need it.
+inline static bool BeButton2_get_seq_end_event(BeButton2* button) {
+    bool result = button->sm.vars.output_seq_end_event;
+    return result;
+}
 
+// MUST be read after update function or value may be lost.
+// Feel free to ignore if you don't need it.
+inline static uint8_t BeButton2_get_seq_press_count(BeButton2 * button) {
+    uint8_t result = button->sm.vars.press_count;
+    return result;
+}
 
-////////////////////// conditions //////////////////////
+///////////////// other //////////////////////
 
-/**
- * @brief Returns true if the button is released.
- */
-bool BeButton2_is_released(BeButton2 * button);
+inline static uint16_t BeButton2_get_press_timer_ms(BeButton2 * button) {
+    return button->sm.vars.t1_ms;
+}
 
-/**
- * @brief Returns true if the button is pressed.
- */
-bool BeButton2_is_pressed(BeButton2 * button);
+// only valid if button is not pressed or if repeat is disabled. Also not valid during initialization.
+inline static uint16_t BeButton2_get_release_timer_ms(BeButton2 * button) {
+    return button->sm.vars.t2_ms;
+}
 
-/**
- * @brief Returns true if the button is long pressed.
- */
-bool BeButton2_is_long_pressed(BeButton2 * button);
+///////////////// conditions //////////////////////
 
-/**
- * @brief Returns true if the button is repeating.
- */
-bool BeButton2_is_repeating(BeButton2 * button);
+inline static bool BeButton2_is_pressed(BeButton2* button) {
+    return button->sm.vars.output_press;
+}
 
+inline static bool BeButton2_is_held_at_start(BeButton2* button) {
+    return button->sm.state_id == BeButton2Sm_StateId_HELD_AT_START;
+}
+
+inline static bool BeButton2_is_initializing(BeButton2* button) {
+    return button->sm.state_id == BeButton2Sm_StateId_STARTUP_DELAY;
+}
+
+inline static bool BeButton2_is_released(BeButton2* button) {
+    return !BeButton2_is_pressed(button);
+}
 
 #ifdef __cplusplus
 }
