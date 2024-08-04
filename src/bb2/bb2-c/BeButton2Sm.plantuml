@@ -13,20 +13,26 @@ skinparam state {
 
 state INIT
 
-state RELEASED_DEBOUNCE
+state RELEASED_DEBOUNCE {
+    note "event will cause T2 clear" as N1
+}
 state RELEASED_STABLE {
     note "Wait for press" as N1
 }
 
 state PRESSED <<press_style>> {
-    state PRESSED_DEBOUNCE
+    state PRESSED_DEBOUNCE {
+        note "event will cause T1 clear" as N1
+    }
     state PRESSED_STABLE {
         [*] -> CONFIRM_LONG
         state CONFIRM_LONG
         state PRESSED_LONG {
+            state NO_REPEAT
             state DELAY_1ST_REPEAT
             state PRESSED_REPEAT
-            [*] -> DELAY_1ST_REPEAT
+            [*] --> DELAY_1ST_REPEAT: else
+            [*] --> NO_REPEAT: [disable_repeat]
         }
     }
     ' [*] -> PRESSED_DEBOUNCE
@@ -39,25 +45,23 @@ state PRESSED <<press_style>> {
 ' ///////////////////////// STATE HANDLERS /////////////////////////
 ' Syntax: https://github.com/StateSmith/StateSmith/wiki/Behaviors
 
-INIT: enter / t1_ms = 0;
-INIT -down-> RELEASED_STABLE: [t1_ms > 25]
+INIT: enter / t2_ms = 0;
+INIT -down-> RELEASED_STABLE: [t2_ms > 25]
 
 
 '
-PRESSED: enter / output_press_event = true;
 PRESSED: enter / output_press = true;
 PRESSED: exit / output_press = false;
 
 ' Wait for debounce time and then go to stable state.
-RELEASED_DEBOUNCE: enter / t1_clear_request = true;
 RELEASED_DEBOUNCE: enter / output_release_event = true;
-RELEASED_DEBOUNCE -right-> RELEASED_STABLE: [t1_ms > 50]
+RELEASED_DEBOUNCE -right-> RELEASED_STABLE: [t2_ms > 50]
 
 ' Button is released. Wait for button press.
 RELEASED_STABLE -down-> PRESSED_DEBOUNCE: [input_active]
 
 ' Wait for debounce time and then go to stable state.
-PRESSED_DEBOUNCE: enter / t1_clear_request = true;
+PRESSED_DEBOUNCE: enter / output_press_event = true;
 PRESSED_DEBOUNCE -> PRESSED_STABLE: [t1_ms > 50]
 
 ' Button is pressed. Wait for button release.
@@ -107,7 +111,11 @@ RenderConfig.AutoExpandedVars = """
 
     // set to 1 when button is detected as active.
     uint8_t input_active: 1;
-    
+
+    // set to 1 to disable repeat events.
+    // the repeat state uses t2
+    uint8_t disable_repeat: 1;
+
     //////////////////////////////////////////
     // OUTPUTS
     //////////////////////////////////////////
@@ -124,8 +132,6 @@ RenderConfig.AutoExpandedVars = """
     uint8_t output_long: 1;
     // uint8_t output_repeat: 1;
 
-    // when set, you should clear t1_ms in your main loop and then set this to false.
-    uint8_t t1_clear_request: 1;
 
     """
 
