@@ -8,7 +8,7 @@ void BeButton2_setup(BeButton2 * button, const BeButton2Pin pin) {
 }
 
 /**
- * Reads button pin, updates button state machine and timer.
+ * Reads button pin, updates button state machine and timers.
  */
 void BeButton2_update(BeButton2 * button, uint32_t elapsed_time_ms) {
     // read pin status and set input to state machine
@@ -29,16 +29,24 @@ void BeButton2_update(BeButton2 * button, uint32_t elapsed_time_ms) {
         button->sm.vars.press_count = 0;
     }
 
-    // update button timers
-    button->sm.vars.t1_ms += elapsed_time_ms;
-    button->sm.vars.t2_ms += elapsed_time_ms;
-
-    // saturate timers on roll over
-    if (button->sm.vars.t1_ms < elapsed_time_ms) {
-        button->sm.vars.t1_ms = UINT16_MAX;
+    // only update t1 if button is active
+    if (button->sm.vars.output_press) {
+        button->sm.vars.t1_ms += elapsed_time_ms;
+    
+        // saturate timer on roll over
+        if (button->sm.vars.t1_ms < elapsed_time_ms) {
+            button->sm.vars.t1_ms = UINT16_MAX;
+        }
     }
-    if (button->sm.vars.t2_ms < elapsed_time_ms) {
-        button->sm.vars.t2_ms = UINT16_MAX;
+
+    // only update t2 if not pressed or in repeat state
+    if (!button->sm.vars.output_press || button->sm.state_id == BeButton2Sm_StateId_PRESSED_REPEAT) {
+        button->sm.vars.t2_ms += elapsed_time_ms;
+    
+        // saturate timer on roll over
+        if (button->sm.vars.t2_ms < elapsed_time_ms) {
+            button->sm.vars.t2_ms = UINT16_MAX;
+        }
     }
 
     // run state machine

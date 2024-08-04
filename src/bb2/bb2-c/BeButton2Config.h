@@ -4,4 +4,11 @@
 
 // you can put timings here instead of hardcoding them in the state machine.
 
-#define REPEAT_INTERVAL_MS 250
+// milliseconds
+#define LONG_PRESS 250
+
+// milliseconds
+#define REPEAT_DELAY 350
+
+// milliseconds
+#define REPEAT_INTERVAL 250
