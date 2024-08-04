@@ -1,0 +1,136 @@
+@startuml BeButton2Sm
+
+' /////////////////////////// Styles ////////////////////////////////
+' Define some colors for the states. Totally optional.
+skinparam state {
+    ' pressed style:
+    BackgroundColor<<press_style>> #c7f1ff
+}
+
+' //////////////////////// STATE ORGANIZATION ///////////////////////
+' Note: StateSmith treats state names and events as case insensitive.
+' More info: https://github.com/StateSmith/StateSmith/wiki/PlantUML
+
+state INIT
+
+state RELEASED_DEBOUNCE
+state RELEASED_STABLE {
+    note "Wait for press" as N1
+}
+
+state PRESSED <<press_style>> {
+    state PRESSED_DEBOUNCE
+    state PRESSED_STABLE {
+        [*] -> CONFIRM_LONG
+        state CONFIRM_LONG
+        state PRESSED_LONG {
+            state DELAY_1ST_REPEAT
+            state PRESSED_REPEAT
+            [*] -> DELAY_1ST_REPEAT
+        }
+    }
+    ' [*] -> PRESSED_DEBOUNCE
+}
+
+
+[*] -> INIT
+
+
+' ///////////////////////// STATE HANDLERS /////////////////////////
+' Syntax: https://github.com/StateSmith/StateSmith/wiki/Behaviors
+
+INIT: enter / t1_ms = 0;
+INIT -down-> RELEASED_STABLE: [t1_ms > 25]
+
+
+'
+PRESSED: enter / output_press_event = true;
+PRESSED: enter / output_press = true;
+PRESSED: exit / output_press = false;
+
+' Wait for debounce time and then go to stable state.
+RELEASED_DEBOUNCE: enter / t1_clear_request = true;
+RELEASED_DEBOUNCE: enter / output_release_event = true;
+RELEASED_DEBOUNCE -right-> RELEASED_STABLE: [t1_ms > 50]
+
+' Button is released. Wait for button press.
+RELEASED_STABLE -down-> PRESSED_DEBOUNCE: [input_active]
+
+' Wait for debounce time and then go to stable state.
+PRESSED_DEBOUNCE: enter / t1_clear_request = true;
+PRESSED_DEBOUNCE -> PRESSED_STABLE: [t1_ms > 50]
+
+' Button is pressed. Wait for button release.
+PRESSED_STABLE -up-> RELEASED_DEBOUNCE: [! input_active]
+
+' Button is still pressed. Wait for long press time.
+CONFIRM_LONG --> PRESSED_LONG: [t1_ms > 500]
+
+' Button has been pressed for a long time.
+' Transition to repeat state if button remains pressed long enough.
+PRESSED_LONG: enter / output_long_event = true;
+PRESSED_LONG: enter / output_long = true;
+PRESSED_LONG: exit / output_long = false;
+
+DELAY_1ST_REPEAT: enter / t2_ms = 0;
+DELAY_1ST_REPEAT --> PRESSED_REPEAT: [t2_ms > 350]
+
+' Keep setting the button repeat event every 250 ms.
+PRESSED_REPEAT: enter / t2_ms = 0;
+PRESSED_REPEAT: enter / output_repeat = true;
+PRESSED_REPEAT: enter / output_repeat_event = true;
+PRESSED_REPEAT --> PRESSED_REPEAT: [t2_ms > 250]
+
+
+' //////////////////////// StateSmith config ////////////////////////
+' The below special comment block sets the StateSmith configuration.
+' More info: https://github.com/StateSmith/StateSmith/issues/335
+
+/'! $CONFIG : toml
+SmRunnerSettings.transpilerId = "C99"
+
+RenderConfig.C.HFileIncludes = """
+    #include <stdint.h> // for fixed width integer state machine variables below
+    """
+RenderConfig.AutoExpandedVars = """
+    //////////////////////////////////////////
+    // INPUTS
+    //////////////////////////////////////////
+
+    // you need to add your loop time to this variable in your main loop.
+    // max time is 65535 ms.
+    uint16_t t1_ms;
+
+    // you need to add your loop time to this variable in your main loop.
+    // max time is 65535 ms.
+    uint16_t t2_ms;
+
+    // set to 1 when button is detected as active.
+    uint8_t input_active: 1;
+    
+    //////////////////////////////////////////
+    // OUTPUTS
+    //////////////////////////////////////////
+
+    // read and clear event flags in your main loop.
+    uint8_t output_release_event: 1;
+    uint8_t output_press_event: 1;
+    uint8_t output_long_event: 1;
+    uint8_t output_repeat_event: 1;
+
+    // read these flags in your main loop, but don't clear them.
+    // they are cleared automatically.
+    uint8_t output_press: 1;
+    uint8_t output_long: 1;
+    // uint8_t output_repeat: 1;
+
+    // when set, you should clear t1_ms in your main loop and then set this to false.
+    uint8_t t1_clear_request: 1;
+
+    """
+
+# Uncomment the below line to potentially save a byte or two of RAM per state machine
+# by telling GCC to use the smallest enumeration integer type possible.
+RenderConfig.C.CEnumDeclarer = "typedef enum __attribute__((packed)) {enumName}"
+'/
+@enduml
