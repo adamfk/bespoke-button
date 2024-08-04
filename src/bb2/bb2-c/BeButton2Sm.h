@@ -19,18 +19,24 @@ enum
 typedef enum __attribute__((packed)) BeButton2Sm_StateId
 {
     BeButton2Sm_StateId_ROOT = 0,
-    BeButton2Sm_StateId_PRESSED_DEBOUNCE = 1,
-    BeButton2Sm_StateId_PRESSED_STABLE = 2,
-    BeButton2Sm_StateId_CONFIRM_LONG = 3,
-    BeButton2Sm_StateId_PRESSED_LONG = 4,
-    BeButton2Sm_StateId_PRESSED_REPEAT = 5,
-    BeButton2Sm_StateId_RELEASED_DEBOUNCE = 6,
-    BeButton2Sm_StateId_RELEASED_STABLE = 7,
+    BeButton2Sm_StateId_HELD_AT_START = 1,
+    BeButton2Sm_StateId_INIT = 2,
+    BeButton2Sm_StateId_PRESSED_DEBOUNCE = 3,
+    BeButton2Sm_StateId_PRESSED_STABLE = 4,
+    BeButton2Sm_StateId_CONFIRM_LONG = 5,
+    BeButton2Sm_StateId_PRESSED_LONG = 6,
+    BeButton2Sm_StateId_DELAY_1ST_REPEAT = 7,
+    BeButton2Sm_StateId_NO_REPEAT = 8,
+    BeButton2Sm_StateId_PRESSED_REPEAT = 9,
+    BeButton2Sm_StateId_RELEASED_DEBOUNCE = 10,
+    BeButton2Sm_StateId_RELEASED_STABLE = 11,
+    BeButton2Sm_StateId_SEQUENCE = 12,
+    BeButton2Sm_StateId_SEQUENCE_END = 13,
 } BeButton2Sm_StateId;
 
 enum
 {
-    BeButton2Sm_StateIdCount = 8
+    BeButton2Sm_StateIdCount = 14
 };
 
 
@@ -41,24 +47,41 @@ typedef struct BeButton2Sm BeButton2Sm;
 // State machine variables. Can be used for inputs, outputs, user variables...
 typedef struct BeButton2Sm_Vars
 {
+    //////////////////////////////////////////
+    // INPUTS
+    //////////////////////////////////////////
+    
     // you need to add your loop time to this variable in your main loop.
     // max time is 65535 ms.
-    uint16_t timer_ms;
+    uint16_t t1_ms;
+    
+    // you need to add your loop time to this variable in your main loop.
+    // max time is 65535 ms.
+    uint16_t t2_ms;
     
     // set to 1 when button is detected as active.
     uint8_t input_active: 1;
+    
+    // set to 1 to disable repeat events.
+    // the repeat state uses t2
+    uint8_t disable_repeat: 1;
+    
+    //////////////////////////////////////////
+    // OUTPUTS
+    //////////////////////////////////////////
     
     // read and clear event flags in your main loop.
     uint8_t output_release_event: 1;
     uint8_t output_press_event: 1;
     uint8_t output_long_event: 1;
     uint8_t output_repeat_event: 1;
+    uint8_t output_seq_end_event: 1;
     
     // read these flags in your main loop, but don't clear them.
     // they are cleared automatically.
     uint8_t output_press: 1;
-    uint8_t output_long: 1;
-    uint8_t output_repeat: 1;
+    
+    uint8_t press_count;
 } BeButton2Sm_Vars;
 
 

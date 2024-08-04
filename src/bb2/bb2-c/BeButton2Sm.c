@@ -13,6 +13,18 @@ static void ROOT_enter(BeButton2Sm* sm);
 
 static void ROOT_exit(BeButton2Sm* sm);
 
+static void HELD_AT_START_enter(BeButton2Sm* sm);
+
+static void HELD_AT_START_exit(BeButton2Sm* sm);
+
+static void HELD_AT_START_do(BeButton2Sm* sm);
+
+static void INIT_enter(BeButton2Sm* sm);
+
+static void INIT_exit(BeButton2Sm* sm);
+
+static void INIT_do(BeButton2Sm* sm);
+
 static void PRESSED_DEBOUNCE_enter(BeButton2Sm* sm);
 
 static void PRESSED_DEBOUNCE_exit(BeButton2Sm* sm);
@@ -35,7 +47,15 @@ static void PRESSED_LONG_enter(BeButton2Sm* sm);
 
 static void PRESSED_LONG_exit(BeButton2Sm* sm);
 
-static void PRESSED_LONG_do(BeButton2Sm* sm);
+static void DELAY_1ST_REPEAT_enter(BeButton2Sm* sm);
+
+static void DELAY_1ST_REPEAT_exit(BeButton2Sm* sm);
+
+static void DELAY_1ST_REPEAT_do(BeButton2Sm* sm);
+
+static void NO_REPEAT_enter(BeButton2Sm* sm);
+
+static void NO_REPEAT_exit(BeButton2Sm* sm);
 
 static void PRESSED_REPEAT_enter(BeButton2Sm* sm);
 
@@ -54,6 +74,18 @@ static void RELEASED_STABLE_enter(BeButton2Sm* sm);
 static void RELEASED_STABLE_exit(BeButton2Sm* sm);
 
 static void RELEASED_STABLE_do(BeButton2Sm* sm);
+
+static void RELEASED_STABLE_InitialState_transition(BeButton2Sm* sm);
+
+static void SEQUENCE_enter(BeButton2Sm* sm);
+
+static void SEQUENCE_exit(BeButton2Sm* sm);
+
+static void SEQUENCE_do(BeButton2Sm* sm);
+
+static void SEQUENCE_END_enter(BeButton2Sm* sm);
+
+static void SEQUENCE_END_exit(BeButton2Sm* sm);
 
 
 // State machine constructor. Must be called before start or dispatch event functions. Not thread safe.
@@ -77,17 +109,17 @@ void BeButton2Sm_start(BeButton2Sm* sm)
         // ROOT.<InitialState> is a pseudo state and cannot have an `enter` trigger.
         
         // ROOT.<InitialState> behavior
-        // uml: TransitionTo(RELEASED_DEBOUNCE)
+        // uml: TransitionTo(INIT)
         {
             // Step 1: Exit states until we reach `ROOT` state (Least Common Ancestor for transition). Already at LCA, no exiting required.
             
             // Step 2: Transition action: ``.
             
-            // Step 3: Enter/move towards transition target `RELEASED_DEBOUNCE`.
-            RELEASED_DEBOUNCE_enter(sm);
+            // Step 3: Enter/move towards transition target `INIT`.
+            INIT_enter(sm);
             
             // Step 4: complete transition. Ends event dispatch. No other behaviors are checked.
-            sm->state_id = BeButton2Sm_StateId_RELEASED_DEBOUNCE;
+            sm->state_id = BeButton2Sm_StateId_INIT;
             // No ancestor handles event. Can skip nulling `ancestor_event_handler`.
             return;
         } // end of behavior for ROOT.<InitialState>
@@ -136,6 +168,132 @@ static void ROOT_exit(BeButton2Sm* sm)
 
 
 ////////////////////////////////////////////////////////////////////////////////
+// event handlers for state HELD_AT_START
+////////////////////////////////////////////////////////////////////////////////
+
+static void HELD_AT_START_enter(BeButton2Sm* sm)
+{
+    // setup trigger/event handlers
+    sm->current_state_exit_handler = HELD_AT_START_exit;
+    sm->current_event_handlers[BeButton2Sm_EventId_DO] = HELD_AT_START_do;
+    
+    // HELD_AT_START behavior
+    // uml: enter / { output_press = true; }
+    {
+        // Step 1: execute action `output_press = true;`
+        sm->vars.output_press = true;
+    } // end of behavior for HELD_AT_START
+}
+
+static void HELD_AT_START_exit(BeButton2Sm* sm)
+{
+    // adjust function pointers for this state's exit
+    sm->current_state_exit_handler = ROOT_exit;
+    sm->current_event_handlers[BeButton2Sm_EventId_DO] = NULL;  // no ancestor listens to this event
+}
+
+static void HELD_AT_START_do(BeButton2Sm* sm)
+{
+    // No ancestor state handles `do` event.
+    
+    // HELD_AT_START behavior
+    // uml: do [! input_active] / { t2_ms = 0; } TransitionTo(RELEASED_DEBOUNCE)
+    if (! sm->vars.input_active)
+    {
+        // Step 1: Exit states until we reach `ROOT` state (Least Common Ancestor for transition).
+        HELD_AT_START_exit(sm);
+        
+        // Step 2: Transition action: `t2_ms = 0;`.
+        sm->vars.t2_ms = 0;
+        
+        // Step 3: Enter/move towards transition target `RELEASED_DEBOUNCE`.
+        RELEASED_DEBOUNCE_enter(sm);
+        
+        // Step 4: complete transition. Ends event dispatch. No other behaviors are checked.
+        sm->state_id = BeButton2Sm_StateId_RELEASED_DEBOUNCE;
+        // No ancestor handles event. Can skip nulling `ancestor_event_handler`.
+        return;
+    } // end of behavior for HELD_AT_START
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+// event handlers for state INIT
+////////////////////////////////////////////////////////////////////////////////
+
+static void INIT_enter(BeButton2Sm* sm)
+{
+    // setup trigger/event handlers
+    sm->current_state_exit_handler = INIT_exit;
+    sm->current_event_handlers[BeButton2Sm_EventId_DO] = INIT_do;
+    
+    // INIT behavior
+    // uml: enter / { t2_ms = 0; }
+    {
+        // Step 1: execute action `t2_ms = 0;`
+        sm->vars.t2_ms = 0;
+    } // end of behavior for INIT
+}
+
+static void INIT_exit(BeButton2Sm* sm)
+{
+    // adjust function pointers for this state's exit
+    sm->current_state_exit_handler = ROOT_exit;
+    sm->current_event_handlers[BeButton2Sm_EventId_DO] = NULL;  // no ancestor listens to this event
+}
+
+static void INIT_do(BeButton2Sm* sm)
+{
+    // No ancestor state handles `do` event.
+    
+    // INIT behavior
+    // uml: do [t2_ms > 25] TransitionTo(ROOT.<ChoicePoint>(INIT_CHOICE))
+    if (sm->vars.t2_ms > 25)
+    {
+        // Step 1: Exit states until we reach `ROOT` state (Least Common Ancestor for transition).
+        INIT_exit(sm);
+        
+        // Step 2: Transition action: ``.
+        
+        // Step 3: Enter/move towards transition target `ROOT.<ChoicePoint>(INIT_CHOICE)`.
+        // ROOT.<ChoicePoint>(INIT_CHOICE) is a pseudo state and cannot have an `enter` trigger.
+        
+        // ROOT.<ChoicePoint>(INIT_CHOICE) behavior
+        // uml: [input_active] TransitionTo(HELD_AT_START)
+        if (sm->vars.input_active)
+        {
+            // Step 1: Exit states until we reach `ROOT` state (Least Common Ancestor for transition). Already at LCA, no exiting required.
+            
+            // Step 2: Transition action: ``.
+            
+            // Step 3: Enter/move towards transition target `HELD_AT_START`.
+            HELD_AT_START_enter(sm);
+            
+            // Step 4: complete transition. Ends event dispatch. No other behaviors are checked.
+            sm->state_id = BeButton2Sm_StateId_HELD_AT_START;
+            // No ancestor handles event. Can skip nulling `ancestor_event_handler`.
+            return;
+        } // end of behavior for ROOT.<ChoicePoint>(INIT_CHOICE)
+        
+        // ROOT.<ChoicePoint>(INIT_CHOICE) behavior
+        // uml: else TransitionTo(RELEASED_STABLE)
+        {
+            // Step 1: Exit states until we reach `ROOT` state (Least Common Ancestor for transition). Already at LCA, no exiting required.
+            
+            // Step 2: Transition action: ``.
+            
+            // Step 3: Enter/move towards transition target `RELEASED_STABLE`.
+            RELEASED_STABLE_enter(sm);
+            
+            // Finish transition by calling pseudo state transition function.
+            RELEASED_STABLE_InitialState_transition(sm);
+            return; // event processing immediately stops when a transition finishes. No other behaviors for this state are checked.
+        } // end of behavior for ROOT.<ChoicePoint>(INIT_CHOICE)
+    } // end of behavior for INIT
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
 // event handlers for state PRESSED_DEBOUNCE
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -146,17 +304,10 @@ static void PRESSED_DEBOUNCE_enter(BeButton2Sm* sm)
     sm->current_event_handlers[BeButton2Sm_EventId_DO] = PRESSED_DEBOUNCE_do;
     
     // PRESSED_DEBOUNCE behavior
-    // uml: enter / { timer_ms = 0; }
+    // uml: enter / { press_count++; }
     {
-        // Step 1: execute action `timer_ms = 0;`
-        sm->vars.timer_ms = 0;
-    } // end of behavior for PRESSED_DEBOUNCE
-    
-    // PRESSED_DEBOUNCE behavior
-    // uml: enter / { output_press = true; }
-    {
-        // Step 1: execute action `output_press = true;`
-        sm->vars.output_press = true;
+        // Step 1: execute action `press_count++;`
+        sm->vars.press_count++;
     } // end of behavior for PRESSED_DEBOUNCE
     
     // PRESSED_DEBOUNCE behavior
@@ -164,6 +315,13 @@ static void PRESSED_DEBOUNCE_enter(BeButton2Sm* sm)
     {
         // Step 1: execute action `output_press_event = true;`
         sm->vars.output_press_event = true;
+    } // end of behavior for PRESSED_DEBOUNCE
+    
+    // PRESSED_DEBOUNCE behavior
+    // uml: enter / { output_press = true; }
+    {
+        // Step 1: execute action `output_press = true;`
+        sm->vars.output_press = true;
     } // end of behavior for PRESSED_DEBOUNCE
 }
 
@@ -179,8 +337,8 @@ static void PRESSED_DEBOUNCE_do(BeButton2Sm* sm)
     // No ancestor state handles `do` event.
     
     // PRESSED_DEBOUNCE behavior
-    // uml: do [timer_ms > 50] TransitionTo(PRESSED_STABLE)
-    if (sm->vars.timer_ms > 50)
+    // uml: do [t1_ms > 50] TransitionTo(PRESSED_STABLE)
+    if (sm->vars.t1_ms > 50)
     {
         // Step 1: Exit states until we reach `ROOT` state (Least Common Ancestor for transition).
         PRESSED_DEBOUNCE_exit(sm);
@@ -222,20 +380,6 @@ static void PRESSED_STABLE_enter(BeButton2Sm* sm)
 
 static void PRESSED_STABLE_exit(BeButton2Sm* sm)
 {
-    // PRESSED_STABLE behavior
-    // uml: exit / { output_long = false; }
-    {
-        // Step 1: execute action `output_long = false;`
-        sm->vars.output_long = false;
-    } // end of behavior for PRESSED_STABLE
-    
-    // PRESSED_STABLE behavior
-    // uml: exit / { output_repeat = false; }
-    {
-        // Step 1: execute action `output_repeat = false;`
-        sm->vars.output_repeat = false;
-    } // end of behavior for PRESSED_STABLE
-    
     // adjust function pointers for this state's exit
     sm->current_state_exit_handler = ROOT_exit;
     sm->current_event_handlers[BeButton2Sm_EventId_DO] = NULL;  // no ancestor listens to this event
@@ -246,14 +390,13 @@ static void PRESSED_STABLE_do(BeButton2Sm* sm)
     // No ancestor state handles `do` event.
     
     // PRESSED_STABLE behavior
-    // uml: do [! input_active] / { output_release_event = true; } TransitionTo(RELEASED_DEBOUNCE)
+    // uml: do [! input_active] TransitionTo(RELEASED_DEBOUNCE)
     if (! sm->vars.input_active)
     {
         // Step 1: Exit states until we reach `ROOT` state (Least Common Ancestor for transition).
         exit_up_to_state_handler(sm, ROOT_exit);
         
-        // Step 2: Transition action: `output_release_event = true;`.
-        sm->vars.output_release_event = true;
+        // Step 2: Transition action: ``.
         
         // Step 3: Enter/move towards transition target `RELEASED_DEBOUNCE`.
         RELEASED_DEBOUNCE_enter(sm);
@@ -275,13 +418,6 @@ static void CONFIRM_LONG_enter(BeButton2Sm* sm)
     // setup trigger/event handlers
     sm->current_state_exit_handler = CONFIRM_LONG_exit;
     sm->current_event_handlers[BeButton2Sm_EventId_DO] = CONFIRM_LONG_do;
-    
-    // CONFIRM_LONG behavior
-    // uml: enter / { timer_ms = 0; }
-    {
-        // Step 1: execute action `timer_ms = 0;`
-        sm->vars.timer_ms = 0;
-    } // end of behavior for CONFIRM_LONG
 }
 
 static void CONFIRM_LONG_exit(BeButton2Sm* sm)
@@ -297,8 +433,8 @@ static void CONFIRM_LONG_do(BeButton2Sm* sm)
     sm->ancestor_event_handler = PRESSED_STABLE_do;
     
     // CONFIRM_LONG behavior
-    // uml: do [timer_ms > 500] TransitionTo(PRESSED_LONG)
-    if (sm->vars.timer_ms > 500)
+    // uml: do [t1_ms > 500] TransitionTo(PRESSED_LONG)
+    if (sm->vars.t1_ms > 500)
     {
         // Step 1: Exit states until we reach `PRESSED_STABLE` state (Least Common Ancestor for transition).
         CONFIRM_LONG_exit(sm);
@@ -308,10 +444,38 @@ static void CONFIRM_LONG_do(BeButton2Sm* sm)
         // Step 3: Enter/move towards transition target `PRESSED_LONG`.
         PRESSED_LONG_enter(sm);
         
-        // Step 4: complete transition. Ends event dispatch. No other behaviors are checked.
-        sm->state_id = BeButton2Sm_StateId_PRESSED_LONG;
-        sm->ancestor_event_handler = NULL;
-        return;
+        // PRESSED_LONG.<InitialState> behavior
+        // uml: [disable_repeat] TransitionTo(NO_REPEAT)
+        if (sm->vars.disable_repeat)
+        {
+            // Step 1: Exit states until we reach `PRESSED_LONG` state (Least Common Ancestor for transition). Already at LCA, no exiting required.
+            
+            // Step 2: Transition action: ``.
+            
+            // Step 3: Enter/move towards transition target `NO_REPEAT`.
+            NO_REPEAT_enter(sm);
+            
+            // Step 4: complete transition. Ends event dispatch. No other behaviors are checked.
+            sm->state_id = BeButton2Sm_StateId_NO_REPEAT;
+            sm->ancestor_event_handler = NULL;
+            return;
+        } // end of behavior for PRESSED_LONG.<InitialState>
+        
+        // PRESSED_LONG.<InitialState> behavior
+        // uml: else TransitionTo(DELAY_1ST_REPEAT)
+        {
+            // Step 1: Exit states until we reach `PRESSED_LONG` state (Least Common Ancestor for transition). Already at LCA, no exiting required.
+            
+            // Step 2: Transition action: ``.
+            
+            // Step 3: Enter/move towards transition target `DELAY_1ST_REPEAT`.
+            DELAY_1ST_REPEAT_enter(sm);
+            
+            // Step 4: complete transition. Ends event dispatch. No other behaviors are checked.
+            sm->state_id = BeButton2Sm_StateId_DELAY_1ST_REPEAT;
+            sm->ancestor_event_handler = NULL;
+            return;
+        } // end of behavior for PRESSED_LONG.<InitialState>
     } // end of behavior for CONFIRM_LONG
 }
 
@@ -324,21 +488,6 @@ static void PRESSED_LONG_enter(BeButton2Sm* sm)
 {
     // setup trigger/event handlers
     sm->current_state_exit_handler = PRESSED_LONG_exit;
-    sm->current_event_handlers[BeButton2Sm_EventId_DO] = PRESSED_LONG_do;
-    
-    // PRESSED_LONG behavior
-    // uml: enter / { timer_ms = 0; }
-    {
-        // Step 1: execute action `timer_ms = 0;`
-        sm->vars.timer_ms = 0;
-    } // end of behavior for PRESSED_LONG
-    
-    // PRESSED_LONG behavior
-    // uml: enter / { output_long = true; }
-    {
-        // Step 1: execute action `output_long = true;`
-        sm->vars.output_long = true;
-    } // end of behavior for PRESSED_LONG
     
     // PRESSED_LONG behavior
     // uml: enter / { output_long_event = true; }
@@ -352,20 +501,45 @@ static void PRESSED_LONG_exit(BeButton2Sm* sm)
 {
     // adjust function pointers for this state's exit
     sm->current_state_exit_handler = PRESSED_STABLE_exit;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+// event handlers for state DELAY_1ST_REPEAT
+////////////////////////////////////////////////////////////////////////////////
+
+static void DELAY_1ST_REPEAT_enter(BeButton2Sm* sm)
+{
+    // setup trigger/event handlers
+    sm->current_state_exit_handler = DELAY_1ST_REPEAT_exit;
+    sm->current_event_handlers[BeButton2Sm_EventId_DO] = DELAY_1ST_REPEAT_do;
+    
+    // DELAY_1ST_REPEAT behavior
+    // uml: enter / { t2_ms = 0; }
+    {
+        // Step 1: execute action `t2_ms = 0;`
+        sm->vars.t2_ms = 0;
+    } // end of behavior for DELAY_1ST_REPEAT
+}
+
+static void DELAY_1ST_REPEAT_exit(BeButton2Sm* sm)
+{
+    // adjust function pointers for this state's exit
+    sm->current_state_exit_handler = PRESSED_LONG_exit;
     sm->current_event_handlers[BeButton2Sm_EventId_DO] = PRESSED_STABLE_do;  // the next ancestor that handles this event is PRESSED_STABLE
 }
 
-static void PRESSED_LONG_do(BeButton2Sm* sm)
+static void DELAY_1ST_REPEAT_do(BeButton2Sm* sm)
 {
     // Setup handler for next ancestor that listens to `do` event.
     sm->ancestor_event_handler = PRESSED_STABLE_do;
     
-    // PRESSED_LONG behavior
-    // uml: do [timer_ms > 350] TransitionTo(PRESSED_REPEAT)
-    if (sm->vars.timer_ms > 350)
+    // DELAY_1ST_REPEAT behavior
+    // uml: do [t2_ms > 350] TransitionTo(PRESSED_REPEAT)
+    if (sm->vars.t2_ms > 350)
     {
-        // Step 1: Exit states until we reach `PRESSED_STABLE` state (Least Common Ancestor for transition).
-        PRESSED_LONG_exit(sm);
+        // Step 1: Exit states until we reach `PRESSED_LONG` state (Least Common Ancestor for transition).
+        DELAY_1ST_REPEAT_exit(sm);
         
         // Step 2: Transition action: ``.
         
@@ -376,7 +550,24 @@ static void PRESSED_LONG_do(BeButton2Sm* sm)
         sm->state_id = BeButton2Sm_StateId_PRESSED_REPEAT;
         sm->ancestor_event_handler = NULL;
         return;
-    } // end of behavior for PRESSED_LONG
+    } // end of behavior for DELAY_1ST_REPEAT
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+// event handlers for state NO_REPEAT
+////////////////////////////////////////////////////////////////////////////////
+
+static void NO_REPEAT_enter(BeButton2Sm* sm)
+{
+    // setup trigger/event handlers
+    sm->current_state_exit_handler = NO_REPEAT_exit;
+}
+
+static void NO_REPEAT_exit(BeButton2Sm* sm)
+{
+    // adjust function pointers for this state's exit
+    sm->current_state_exit_handler = PRESSED_LONG_exit;
 }
 
 
@@ -391,17 +582,10 @@ static void PRESSED_REPEAT_enter(BeButton2Sm* sm)
     sm->current_event_handlers[BeButton2Sm_EventId_DO] = PRESSED_REPEAT_do;
     
     // PRESSED_REPEAT behavior
-    // uml: enter / { timer_ms = 0; }
+    // uml: enter / { t2_ms = 0; }
     {
-        // Step 1: execute action `timer_ms = 0;`
-        sm->vars.timer_ms = 0;
-    } // end of behavior for PRESSED_REPEAT
-    
-    // PRESSED_REPEAT behavior
-    // uml: enter / { output_repeat = true; }
-    {
-        // Step 1: execute action `output_repeat = true;`
-        sm->vars.output_repeat = true;
+        // Step 1: execute action `t2_ms = 0;`
+        sm->vars.t2_ms = 0;
     } // end of behavior for PRESSED_REPEAT
     
     // PRESSED_REPEAT behavior
@@ -415,7 +599,7 @@ static void PRESSED_REPEAT_enter(BeButton2Sm* sm)
 static void PRESSED_REPEAT_exit(BeButton2Sm* sm)
 {
     // adjust function pointers for this state's exit
-    sm->current_state_exit_handler = PRESSED_STABLE_exit;
+    sm->current_state_exit_handler = PRESSED_LONG_exit;
     sm->current_event_handlers[BeButton2Sm_EventId_DO] = PRESSED_STABLE_do;  // the next ancestor that handles this event is PRESSED_STABLE
 }
 
@@ -425,10 +609,28 @@ static void PRESSED_REPEAT_do(BeButton2Sm* sm)
     sm->ancestor_event_handler = PRESSED_STABLE_do;
     
     // PRESSED_REPEAT behavior
-    // uml: do [timer_ms > 250] TransitionTo(PRESSED_REPEAT)
-    if (sm->vars.timer_ms > 250)
+    // uml: 1. do [disable_repeat] TransitionTo(NO_REPEAT)
+    if (sm->vars.disable_repeat)
     {
-        // Step 1: Exit states until we reach `PRESSED_STABLE` state (Least Common Ancestor for transition).
+        // Step 1: Exit states until we reach `PRESSED_LONG` state (Least Common Ancestor for transition).
+        PRESSED_REPEAT_exit(sm);
+        
+        // Step 2: Transition action: ``.
+        
+        // Step 3: Enter/move towards transition target `NO_REPEAT`.
+        NO_REPEAT_enter(sm);
+        
+        // Step 4: complete transition. Ends event dispatch. No other behaviors are checked.
+        sm->state_id = BeButton2Sm_StateId_NO_REPEAT;
+        sm->ancestor_event_handler = NULL;
+        return;
+    } // end of behavior for PRESSED_REPEAT
+    
+    // PRESSED_REPEAT behavior
+    // uml: do [t2_ms > 250] TransitionTo(PRESSED_REPEAT)
+    if (sm->vars.t2_ms > 250)
+    {
+        // Step 1: Exit states until we reach `PRESSED_LONG` state (Least Common Ancestor for transition).
         PRESSED_REPEAT_exit(sm);
         
         // Step 2: Transition action: ``.
@@ -455,10 +657,10 @@ static void RELEASED_DEBOUNCE_enter(BeButton2Sm* sm)
     sm->current_event_handlers[BeButton2Sm_EventId_DO] = RELEASED_DEBOUNCE_do;
     
     // RELEASED_DEBOUNCE behavior
-    // uml: enter / { timer_ms = 0; }
+    // uml: enter / { output_release_event = true; }
     {
-        // Step 1: execute action `timer_ms = 0;`
-        sm->vars.timer_ms = 0;
+        // Step 1: execute action `output_release_event = true;`
+        sm->vars.output_release_event = true;
     } // end of behavior for RELEASED_DEBOUNCE
     
     // RELEASED_DEBOUNCE behavior
@@ -481,8 +683,8 @@ static void RELEASED_DEBOUNCE_do(BeButton2Sm* sm)
     // No ancestor state handles `do` event.
     
     // RELEASED_DEBOUNCE behavior
-    // uml: do [timer_ms > 50] TransitionTo(RELEASED_STABLE)
-    if (sm->vars.timer_ms > 50)
+    // uml: do [t2_ms > 50] TransitionTo(RELEASED_STABLE)
+    if (sm->vars.t2_ms > 50)
     {
         // Step 1: Exit states until we reach `ROOT` state (Least Common Ancestor for transition).
         RELEASED_DEBOUNCE_exit(sm);
@@ -492,10 +694,9 @@ static void RELEASED_DEBOUNCE_do(BeButton2Sm* sm)
         // Step 3: Enter/move towards transition target `RELEASED_STABLE`.
         RELEASED_STABLE_enter(sm);
         
-        // Step 4: complete transition. Ends event dispatch. No other behaviors are checked.
-        sm->state_id = BeButton2Sm_StateId_RELEASED_STABLE;
-        // No ancestor handles event. Can skip nulling `ancestor_event_handler`.
-        return;
+        // Finish transition by calling pseudo state transition function.
+        RELEASED_STABLE_InitialState_transition(sm);
+        return; // event processing immediately stops when a transition finishes. No other behaviors for this state are checked.
     } // end of behavior for RELEASED_DEBOUNCE
 }
 
@@ -527,7 +728,7 @@ static void RELEASED_STABLE_do(BeButton2Sm* sm)
     if (sm->vars.input_active)
     {
         // Step 1: Exit states until we reach `ROOT` state (Least Common Ancestor for transition).
-        RELEASED_STABLE_exit(sm);
+        exit_up_to_state_handler(sm, ROOT_exit);
         
         // Step 2: Transition action: ``.
         
@@ -541,19 +742,112 @@ static void RELEASED_STABLE_do(BeButton2Sm* sm)
     } // end of behavior for RELEASED_STABLE
 }
 
+static void RELEASED_STABLE_InitialState_transition(BeButton2Sm* sm)
+{
+    // RELEASED_STABLE.<InitialState> behavior
+    // uml: TransitionTo(SEQUENCE)
+    {
+        // Step 1: Exit states until we reach `RELEASED_STABLE` state (Least Common Ancestor for transition). Already at LCA, no exiting required.
+        
+        // Step 2: Transition action: ``.
+        
+        // Step 3: Enter/move towards transition target `SEQUENCE`.
+        SEQUENCE_enter(sm);
+        
+        // Step 4: complete transition. Ends event dispatch. No other behaviors are checked.
+        sm->state_id = BeButton2Sm_StateId_SEQUENCE;
+        sm->ancestor_event_handler = NULL;
+        return;
+    } // end of behavior for RELEASED_STABLE.<InitialState>
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+// event handlers for state SEQUENCE
+////////////////////////////////////////////////////////////////////////////////
+
+static void SEQUENCE_enter(BeButton2Sm* sm)
+{
+    // setup trigger/event handlers
+    sm->current_state_exit_handler = SEQUENCE_exit;
+    sm->current_event_handlers[BeButton2Sm_EventId_DO] = SEQUENCE_do;
+}
+
+static void SEQUENCE_exit(BeButton2Sm* sm)
+{
+    // adjust function pointers for this state's exit
+    sm->current_state_exit_handler = RELEASED_STABLE_exit;
+    sm->current_event_handlers[BeButton2Sm_EventId_DO] = RELEASED_STABLE_do;  // the next ancestor that handles this event is RELEASED_STABLE
+}
+
+static void SEQUENCE_do(BeButton2Sm* sm)
+{
+    // Setup handler for next ancestor that listens to `do` event.
+    sm->ancestor_event_handler = RELEASED_STABLE_do;
+    
+    // SEQUENCE behavior
+    // uml: do [t2_ms > 500] TransitionTo(SEQUENCE_END)
+    if (sm->vars.t2_ms > 500)
+    {
+        // Step 1: Exit states until we reach `RELEASED_STABLE` state (Least Common Ancestor for transition).
+        SEQUENCE_exit(sm);
+        
+        // Step 2: Transition action: ``.
+        
+        // Step 3: Enter/move towards transition target `SEQUENCE_END`.
+        SEQUENCE_END_enter(sm);
+        
+        // Step 4: complete transition. Ends event dispatch. No other behaviors are checked.
+        sm->state_id = BeButton2Sm_StateId_SEQUENCE_END;
+        sm->ancestor_event_handler = NULL;
+        return;
+    } // end of behavior for SEQUENCE
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+// event handlers for state SEQUENCE_END
+////////////////////////////////////////////////////////////////////////////////
+
+static void SEQUENCE_END_enter(BeButton2Sm* sm)
+{
+    // setup trigger/event handlers
+    sm->current_state_exit_handler = SEQUENCE_END_exit;
+    
+    // SEQUENCE_END behavior
+    // uml: enter [press_count > 0] / { output_seq_end_event = true; }
+    if (sm->vars.press_count > 0)
+    {
+        // Step 1: execute action `output_seq_end_event = true;`
+        sm->vars.output_seq_end_event = true;
+    } // end of behavior for SEQUENCE_END
+}
+
+static void SEQUENCE_END_exit(BeButton2Sm* sm)
+{
+    // adjust function pointers for this state's exit
+    sm->current_state_exit_handler = RELEASED_STABLE_exit;
+}
+
 // Thread safe.
 char const * BeButton2Sm_state_id_to_string(BeButton2Sm_StateId id)
 {
     switch (id)
     {
         case BeButton2Sm_StateId_ROOT: return "ROOT";
+        case BeButton2Sm_StateId_HELD_AT_START: return "HELD_AT_START";
+        case BeButton2Sm_StateId_INIT: return "INIT";
         case BeButton2Sm_StateId_PRESSED_DEBOUNCE: return "PRESSED_DEBOUNCE";
         case BeButton2Sm_StateId_PRESSED_STABLE: return "PRESSED_STABLE";
         case BeButton2Sm_StateId_CONFIRM_LONG: return "CONFIRM_LONG";
         case BeButton2Sm_StateId_PRESSED_LONG: return "PRESSED_LONG";
+        case BeButton2Sm_StateId_DELAY_1ST_REPEAT: return "DELAY_1ST_REPEAT";
+        case BeButton2Sm_StateId_NO_REPEAT: return "NO_REPEAT";
         case BeButton2Sm_StateId_PRESSED_REPEAT: return "PRESSED_REPEAT";
         case BeButton2Sm_StateId_RELEASED_DEBOUNCE: return "RELEASED_DEBOUNCE";
         case BeButton2Sm_StateId_RELEASED_STABLE: return "RELEASED_STABLE";
+        case BeButton2Sm_StateId_SEQUENCE: return "SEQUENCE";
+        case BeButton2Sm_StateId_SEQUENCE_END: return "SEQUENCE_END";
         default: return "?";
     }
 }

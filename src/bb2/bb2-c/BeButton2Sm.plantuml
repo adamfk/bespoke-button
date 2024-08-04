@@ -15,18 +15,22 @@ state INIT
 state INIT_CHOICE<<choice>>
 
 state HELD_AT_START {
-    note "inspect state ID to detect this" as N1
+    note "Inspect state ID to detect this" as N1
 }
 
 state RELEASED_DEBOUNCE {
-    note "event will cause T2 clear" as N1
+    note "Event will clear T2 in post.\nThis allows checking press duty cycle\nif repeat is disabled." as N1
 }
 state RELEASED_STABLE {
-    note "Wait for press" as N1
+    state SEQUENCE
+    state SEQUENCE_END  {
+        note "This is the end of a press sequence\nlike a double/triple/... click.\nEvent will clear `press_count` in post.\nThis allows checking value before clear." as N1
+    }
+    [*] -> SEQUENCE
 }
 
 state PRESSED_DEBOUNCE <<press_style>> {
-    note "event will cause T1 clear" as N1
+    note "Event will clear T1 in post.\nThis allows checking press duty cycle\nif repeat is disabled." as N1
 }
 state PRESSED_STABLE <<press_style>> {
     [*] -> CONFIRM_LONG
@@ -34,7 +38,9 @@ state PRESSED_STABLE <<press_style>> {
     state PRESSED_LONG {
         state NO_REPEAT
         state DELAY_1ST_REPEAT
-        state PRESSED_REPEAT
+        state PRESSED_REPEAT {
+            note "Shares T2 with released states.\nCould have its own timer." as N1
+        }
         [*] --> DELAY_1ST_REPEAT: else
         [*] --> NO_REPEAT: [disable_repeat]
     }
@@ -54,6 +60,7 @@ INIT -down-> INIT_CHOICE: [t2_ms > 25]
 INIT_CHOICE -left-> HELD_AT_START: [input_active]
 INIT_CHOICE --> RELEASED_STABLE: else
 
+HELD_AT_START: enter / output_press = true;
 HELD_AT_START --> RELEASED_DEBOUNCE: [! input_active] / t2_ms = 0;
 
 ' Wait for debounce time and then go to stable state.
@@ -64,7 +71,13 @@ RELEASED_DEBOUNCE -right-> RELEASED_STABLE: [t2_ms > 50]
 ' Button is released. Wait for button press.
 RELEASED_STABLE -down-> PRESSED_DEBOUNCE: [input_active]
 
+SEQUENCE --> SEQUENCE_END: [t2_ms > 500]
+
+SEQUENCE_END: enter [press_count > 0] / output_seq_end_event = true;
+
+
 ' Wait for debounce time and then go to stable state.
+PRESSED_DEBOUNCE: enter / press_count++;
 PRESSED_DEBOUNCE: enter / output_press_event = true;
 PRESSED_DEBOUNCE: enter / output_press = true;
 PRESSED_DEBOUNCE -left-> PRESSED_STABLE: [t1_ms > 50]
@@ -78,15 +91,12 @@ CONFIRM_LONG --> PRESSED_LONG: [t1_ms > 500]
 ' Button has been pressed for a long time.
 ' Transition to repeat state if button remains pressed long enough.
 PRESSED_LONG: enter / output_long_event = true;
-PRESSED_LONG: enter / output_long = true;
-PRESSED_LONG: exit / output_long = false;
 
 DELAY_1ST_REPEAT: enter / t2_ms = 0;
 DELAY_1ST_REPEAT --> PRESSED_REPEAT: [t2_ms > 350]
 
 ' Keep setting the button repeat event every 250 ms.
 PRESSED_REPEAT: enter / t2_ms = 0;
-PRESSED_REPEAT: enter / output_repeat = true;
 PRESSED_REPEAT: enter / output_repeat_event = true;
 PRESSED_REPEAT --> PRESSED_REPEAT: [t2_ms > 250]
 PRESSED_REPEAT -up-> NO_REPEAT: 1. [disable_repeat]
@@ -131,13 +141,14 @@ RenderConfig.AutoExpandedVars = """
     uint8_t output_press_event: 1;
     uint8_t output_long_event: 1;
     uint8_t output_repeat_event: 1;
+    uint8_t output_seq_end_event: 1;
 
     // read these flags in your main loop, but don't clear them.
     // they are cleared automatically.
     uint8_t output_press: 1;
-    uint8_t output_long: 1;
 
     uint8_t press_count;
+
     """
 
 # Uncomment the below line to potentially save a byte or two of RAM per state machine
