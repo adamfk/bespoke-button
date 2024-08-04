@@ -1,5 +1,5 @@
 #include <assert.h>
-#include "src/BeButton/BeButton.hpp"
+#include "src/BeButton1/BeButton1.hpp"
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -7,8 +7,8 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 // button state machines
-static BeButton left_button;
-static BeButton right_button;
+static BeButton1 left_button;
+static BeButton1 right_button;
 
 // Millisecond time when loop() was ran last.
 // This is used to calculate the elapsed time between loops.
@@ -19,10 +19,10 @@ static uint32_t last_loop_ms = 0;
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// BeButton functions
+// BeButton1 functions
 ////////////////////////////////////////////////////////////////////////////////
 
-bool BeButton::is_pin_active(const BeButtonPin pin)
+bool BeButton1::is_pin_active(const BeButton1Pin pin)
 {
     return (digitalRead(pin) == LOW);
 }
@@ -44,7 +44,7 @@ void setup()
   setup_button(right_button, 4);
 }
 
-static void setup_button(BeButton & button, const uint8_t pin)
+static void setup_button(BeButton1 & button, const uint8_t pin)
 {
   pinMode(pin, INPUT_PULLUP);
   button.setup(pin);
@@ -74,7 +74,7 @@ void loop()
 /**
  * Checks if a button event occurred, clears the event and prints it to serial.
  */
-static void print_button_events(BeButton & button, const char *button_name)
+static void print_button_events(BeButton1 & button, const char *button_name)
 {
   if (button.pop_press_event())
   {

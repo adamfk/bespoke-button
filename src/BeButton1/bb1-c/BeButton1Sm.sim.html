@@ -4,8 +4,8 @@
   -- It also serves as an interactive console that you can use to validate the
   -- state machine's behavior.
   --
-  -- Using BeButtonSm.js generally looks like:
-  --   var sm = new BeButtonSm();
+  -- Using BeButton1Sm.js generally looks like:
+  --   var sm = new BeButton1Sm();
   --   sm.start();
   --
   -- And then using sm.dispatchEvent() to dispatch events to the state machine.
@@ -326,7 +326,7 @@ ROOT.(InitialState) --> RELEASED_DEBOUNCE
 // Algorithm: Balanced1. See https://github.com/StateSmith/StateSmith/wiki/Algorithms
 
 // Generated state machine
-class BeButtonSm
+class BeButton1Sm
 {
 // Null by default.
 // May be overridden to override guard evaluation (eg. in a simulator)
@@ -363,7 +363,7 @@ evaluateGuard = null;
     #ancestorEventHandler;
     
     // Used internally by state machine. Don't modify.
-    #currentEventHandlers = Array(BeButtonSm.EventIdCount).fill(undefined);
+    #currentEventHandlers = Array(BeButton1Sm.EventIdCount).fill(undefined);
     
     // Used internally by state machine. Don't modify.
     #currentStateExitHandler;
@@ -394,7 +394,7 @@ evaluateGuard = null;
                 this.#RELEASED_DEBOUNCE_enter();
                 
                 // Step 4: complete transition. Ends event dispatch. No other behaviors are checked.
-                this.stateId = BeButtonSm.StateId.RELEASED_DEBOUNCE;
+                this.stateId = BeButton1Sm.StateId.RELEASED_DEBOUNCE;
                 // No ancestor handles event. Can skip nulling `ancestorEventHandler`.
                 return;
             } // end of behavior for ROOT.<InitialState>
@@ -448,7 +448,7 @@ evaluateGuard = null;
     {
         // setup trigger/event handlers
         this.#currentStateExitHandler = this.#PRESSED_DEBOUNCE_exit;
-        this.#currentEventHandlers[BeButtonSm.EventId.DO] = this.#PRESSED_DEBOUNCE_do;
+        this.#currentEventHandlers[BeButton1Sm.EventId.DO] = this.#PRESSED_DEBOUNCE_do;
         
         // PRESSED_DEBOUNCE behavior
         // uml: enter / { this.tracer?.enterState('PRESSED_DEBOUNCE'); }
@@ -490,7 +490,7 @@ evaluateGuard = null;
         
         // adjust function pointers for this state's exit
         this.#currentStateExitHandler = this.#ROOT_exit;
-        this.#currentEventHandlers[BeButtonSm.EventId.DO] = null;  // no ancestor listens to this event
+        this.#currentEventHandlers[BeButton1Sm.EventId.DO] = null;  // no ancestor listens to this event
     }
     
     #PRESSED_DEBOUNCE_do()
@@ -522,7 +522,7 @@ evaluateGuard = null;
                 this.#CONFIRM_LONG_enter();
                 
                 // Step 4: complete transition. Ends event dispatch. No other behaviors are checked.
-                this.stateId = BeButtonSm.StateId.CONFIRM_LONG;
+                this.stateId = BeButton1Sm.StateId.CONFIRM_LONG;
                 // No ancestor handles event. Can skip nulling `ancestorEventHandler`.
                 return;
             } // end of behavior for PRESSED_STABLE.<InitialState>
@@ -538,7 +538,7 @@ evaluateGuard = null;
     {
         // setup trigger/event handlers
         this.#currentStateExitHandler = this.#PRESSED_STABLE_exit;
-        this.#currentEventHandlers[BeButtonSm.EventId.DO] = this.#PRESSED_STABLE_do;
+        this.#currentEventHandlers[BeButton1Sm.EventId.DO] = this.#PRESSED_STABLE_do;
         
         // PRESSED_STABLE behavior
         // uml: enter / { this.tracer?.enterState('PRESSED_STABLE'); }
@@ -573,7 +573,7 @@ evaluateGuard = null;
         
         // adjust function pointers for this state's exit
         this.#currentStateExitHandler = this.#ROOT_exit;
-        this.#currentEventHandlers[BeButtonSm.EventId.DO] = null;  // no ancestor listens to this event
+        this.#currentEventHandlers[BeButton1Sm.EventId.DO] = null;  // no ancestor listens to this event
     }
     
     #PRESSED_STABLE_do()
@@ -594,7 +594,7 @@ evaluateGuard = null;
             this.#RELEASED_DEBOUNCE_enter();
             
             // Step 4: complete transition. Ends event dispatch. No other behaviors are checked.
-            this.stateId = BeButtonSm.StateId.RELEASED_DEBOUNCE;
+            this.stateId = BeButton1Sm.StateId.RELEASED_DEBOUNCE;
             // No ancestor handles event. Can skip nulling `ancestorEventHandler`.
             return;
         } // end of behavior for PRESSED_STABLE
@@ -609,7 +609,7 @@ evaluateGuard = null;
     {
         // setup trigger/event handlers
         this.#currentStateExitHandler = this.#CONFIRM_LONG_exit;
-        this.#currentEventHandlers[BeButtonSm.EventId.DO] = this.#CONFIRM_LONG_do;
+        this.#currentEventHandlers[BeButton1Sm.EventId.DO] = this.#CONFIRM_LONG_do;
         
         // CONFIRM_LONG behavior
         // uml: enter / { this.tracer?.enterState('CONFIRM_LONG'); }
@@ -637,7 +637,7 @@ evaluateGuard = null;
         
         // adjust function pointers for this state's exit
         this.#currentStateExitHandler = this.#PRESSED_STABLE_exit;
-        this.#currentEventHandlers[BeButtonSm.EventId.DO] = this.#PRESSED_STABLE_do;  // the next ancestor that handles this event is PRESSED_STABLE
+        this.#currentEventHandlers[BeButton1Sm.EventId.DO] = this.#PRESSED_STABLE_do;  // the next ancestor that handles this event is PRESSED_STABLE
     }
     
     #CONFIRM_LONG_do()
@@ -659,7 +659,7 @@ evaluateGuard = null;
             this.#PRESSED_LONG_enter();
             
             // Step 4: complete transition. Ends event dispatch. No other behaviors are checked.
-            this.stateId = BeButtonSm.StateId.PRESSED_LONG;
+            this.stateId = BeButton1Sm.StateId.PRESSED_LONG;
             this.#ancestorEventHandler = null;
             return;
         } // end of behavior for CONFIRM_LONG
@@ -674,7 +674,7 @@ evaluateGuard = null;
     {
         // setup trigger/event handlers
         this.#currentStateExitHandler = this.#PRESSED_LONG_exit;
-        this.#currentEventHandlers[BeButtonSm.EventId.DO] = this.#PRESSED_LONG_do;
+        this.#currentEventHandlers[BeButton1Sm.EventId.DO] = this.#PRESSED_LONG_do;
         
         // PRESSED_LONG behavior
         // uml: enter / { this.tracer?.enterState('PRESSED_LONG'); }
@@ -716,7 +716,7 @@ evaluateGuard = null;
         
         // adjust function pointers for this state's exit
         this.#currentStateExitHandler = this.#PRESSED_STABLE_exit;
-        this.#currentEventHandlers[BeButtonSm.EventId.DO] = this.#PRESSED_STABLE_do;  // the next ancestor that handles this event is PRESSED_STABLE
+        this.#currentEventHandlers[BeButton1Sm.EventId.DO] = this.#PRESSED_STABLE_do;  // the next ancestor that handles this event is PRESSED_STABLE
     }
     
     #PRESSED_LONG_do()
@@ -738,7 +738,7 @@ evaluateGuard = null;
             this.#PRESSED_REPEAT_enter();
             
             // Step 4: complete transition. Ends event dispatch. No other behaviors are checked.
-            this.stateId = BeButtonSm.StateId.PRESSED_REPEAT;
+            this.stateId = BeButton1Sm.StateId.PRESSED_REPEAT;
             this.#ancestorEventHandler = null;
             return;
         } // end of behavior for PRESSED_LONG
@@ -753,7 +753,7 @@ evaluateGuard = null;
     {
         // setup trigger/event handlers
         this.#currentStateExitHandler = this.#PRESSED_REPEAT_exit;
-        this.#currentEventHandlers[BeButtonSm.EventId.DO] = this.#PRESSED_REPEAT_do;
+        this.#currentEventHandlers[BeButton1Sm.EventId.DO] = this.#PRESSED_REPEAT_do;
         
         // PRESSED_REPEAT behavior
         // uml: enter / { this.tracer?.enterState('PRESSED_REPEAT'); }
@@ -795,7 +795,7 @@ evaluateGuard = null;
         
         // adjust function pointers for this state's exit
         this.#currentStateExitHandler = this.#PRESSED_STABLE_exit;
-        this.#currentEventHandlers[BeButtonSm.EventId.DO] = this.#PRESSED_STABLE_do;  // the next ancestor that handles this event is PRESSED_STABLE
+        this.#currentEventHandlers[BeButton1Sm.EventId.DO] = this.#PRESSED_STABLE_do;  // the next ancestor that handles this event is PRESSED_STABLE
     }
     
     #PRESSED_REPEAT_do()
@@ -817,7 +817,7 @@ evaluateGuard = null;
             this.#PRESSED_REPEAT_enter();
             
             // Step 4: complete transition. Ends event dispatch. No other behaviors are checked.
-            this.stateId = BeButtonSm.StateId.PRESSED_REPEAT;
+            this.stateId = BeButton1Sm.StateId.PRESSED_REPEAT;
             this.#ancestorEventHandler = null;
             return;
         } // end of behavior for PRESSED_REPEAT
@@ -832,7 +832,7 @@ evaluateGuard = null;
     {
         // setup trigger/event handlers
         this.#currentStateExitHandler = this.#RELEASED_DEBOUNCE_exit;
-        this.#currentEventHandlers[BeButtonSm.EventId.DO] = this.#RELEASED_DEBOUNCE_do;
+        this.#currentEventHandlers[BeButton1Sm.EventId.DO] = this.#RELEASED_DEBOUNCE_do;
         
         // RELEASED_DEBOUNCE behavior
         // uml: enter / { this.tracer?.enterState('RELEASED_DEBOUNCE'); }
@@ -867,7 +867,7 @@ evaluateGuard = null;
         
         // adjust function pointers for this state's exit
         this.#currentStateExitHandler = this.#ROOT_exit;
-        this.#currentEventHandlers[BeButtonSm.EventId.DO] = null;  // no ancestor listens to this event
+        this.#currentEventHandlers[BeButton1Sm.EventId.DO] = null;  // no ancestor listens to this event
     }
     
     #RELEASED_DEBOUNCE_do()
@@ -888,7 +888,7 @@ evaluateGuard = null;
             this.#RELEASED_STABLE_enter();
             
             // Step 4: complete transition. Ends event dispatch. No other behaviors are checked.
-            this.stateId = BeButtonSm.StateId.RELEASED_STABLE;
+            this.stateId = BeButton1Sm.StateId.RELEASED_STABLE;
             // No ancestor handles event. Can skip nulling `ancestorEventHandler`.
             return;
         } // end of behavior for RELEASED_DEBOUNCE
@@ -903,7 +903,7 @@ evaluateGuard = null;
     {
         // setup trigger/event handlers
         this.#currentStateExitHandler = this.#RELEASED_STABLE_exit;
-        this.#currentEventHandlers[BeButtonSm.EventId.DO] = this.#RELEASED_STABLE_do;
+        this.#currentEventHandlers[BeButton1Sm.EventId.DO] = this.#RELEASED_STABLE_do;
         
         // RELEASED_STABLE behavior
         // uml: enter / { this.tracer?.enterState('RELEASED_STABLE'); }
@@ -924,7 +924,7 @@ evaluateGuard = null;
         
         // adjust function pointers for this state's exit
         this.#currentStateExitHandler = this.#ROOT_exit;
-        this.#currentEventHandlers[BeButtonSm.EventId.DO] = null;  // no ancestor listens to this event
+        this.#currentEventHandlers[BeButton1Sm.EventId.DO] = null;  // no ancestor listens to this event
     }
     
     #RELEASED_STABLE_do()
@@ -945,7 +945,7 @@ evaluateGuard = null;
             this.#PRESSED_DEBOUNCE_enter();
             
             // Step 4: complete transition. Ends event dispatch. No other behaviors are checked.
-            this.stateId = BeButtonSm.StateId.PRESSED_DEBOUNCE;
+            this.stateId = BeButton1Sm.StateId.PRESSED_DEBOUNCE;
             // No ancestor handles event. Can skip nulling `ancestorEventHandler`.
             return;
         } // end of behavior for RELEASED_STABLE
@@ -956,14 +956,14 @@ evaluateGuard = null;
     {
         switch (id)
         {
-            case BeButtonSm.StateId.ROOT: return "ROOT";
-            case BeButtonSm.StateId.PRESSED_DEBOUNCE: return "PRESSED_DEBOUNCE";
-            case BeButtonSm.StateId.PRESSED_STABLE: return "PRESSED_STABLE";
-            case BeButtonSm.StateId.CONFIRM_LONG: return "CONFIRM_LONG";
-            case BeButtonSm.StateId.PRESSED_LONG: return "PRESSED_LONG";
-            case BeButtonSm.StateId.PRESSED_REPEAT: return "PRESSED_REPEAT";
-            case BeButtonSm.StateId.RELEASED_DEBOUNCE: return "RELEASED_DEBOUNCE";
-            case BeButtonSm.StateId.RELEASED_STABLE: return "RELEASED_STABLE";
+            case BeButton1Sm.StateId.ROOT: return "ROOT";
+            case BeButton1Sm.StateId.PRESSED_DEBOUNCE: return "PRESSED_DEBOUNCE";
+            case BeButton1Sm.StateId.PRESSED_STABLE: return "PRESSED_STABLE";
+            case BeButton1Sm.StateId.CONFIRM_LONG: return "CONFIRM_LONG";
+            case BeButton1Sm.StateId.PRESSED_LONG: return "PRESSED_LONG";
+            case BeButton1Sm.StateId.PRESSED_REPEAT: return "PRESSED_REPEAT";
+            case BeButton1Sm.StateId.RELEASED_DEBOUNCE: return "RELEASED_DEBOUNCE";
+            case BeButton1Sm.StateId.RELEASED_STABLE: return "RELEASED_STABLE";
             default: return "?";
         }
     }
@@ -973,7 +973,7 @@ evaluateGuard = null;
     {
         switch (id)
         {
-            case BeButtonSm.EventId.DO: return "DO";
+            case BeButton1Sm.EventId.DO: return "DO";
             default: return "?";
         }
     }
@@ -1095,7 +1095,7 @@ evaluateGuard = null;
             document.querySelector('tbody').appendChild(row);
         }
 
-        var sm = new BeButtonSm();
+        var sm = new BeButton1Sm();
 
         // prompt the user to evaluate guards manually
         sm.evaluateGuard = (guard) => {
@@ -1125,7 +1125,7 @@ evaluateGuard = null;
 
         // The simulator uses a tracer callback to perform operations such as 
         // state highlighting and logging. You do not need this functionality
-        // when using BeButtonSm.js in your own applications, although you may
+        // when using BeButton1Sm.js in your own applications, although you may
         // choose to implement a tracer for debugging purposes.
         sm.tracer = {
             enterState: (mermaidName) => {
@@ -1156,7 +1156,7 @@ evaluateGuard = null;
                 clearHighlightedEdges();
                 sm.tracer?.log('<span class="dispatched"><span class="trigger">' + diagramEventName + '</span> DISPATCHED</span>', true);
                 const fsmEventName = diagramEventName.toUpperCase();
-                sm.dispatchEvent(BeButtonSm.EventId[fsmEventName]); 
+                sm.dispatchEvent(BeButton1Sm.EventId[fsmEventName]); 
             });
             document.getElementById('buttons').appendChild(button);
         });

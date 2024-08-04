@@ -6,40 +6,40 @@
 
 #include <stdint.h> // for fixed width integer state machine variables below
 
-typedef enum __attribute__((packed)) BeButtonSm_EventId
+typedef enum __attribute__((packed)) BeButton1Sm_EventId
 {
-    BeButtonSm_EventId_DO = 0, // The `do` event is special. State event handlers do not consume this event (ancestors all get it too) unless a transition occurs.
-} BeButtonSm_EventId;
+    BeButton1Sm_EventId_DO = 0, // The `do` event is special. State event handlers do not consume this event (ancestors all get it too) unless a transition occurs.
+} BeButton1Sm_EventId;
 
 enum
 {
-    BeButtonSm_EventIdCount = 1
+    BeButton1Sm_EventIdCount = 1
 };
 
-typedef enum __attribute__((packed)) BeButtonSm_StateId
+typedef enum __attribute__((packed)) BeButton1Sm_StateId
 {
-    BeButtonSm_StateId_ROOT = 0,
-    BeButtonSm_StateId_PRESSED_DEBOUNCE = 1,
-    BeButtonSm_StateId_PRESSED_STABLE = 2,
-    BeButtonSm_StateId_CONFIRM_LONG = 3,
-    BeButtonSm_StateId_PRESSED_LONG = 4,
-    BeButtonSm_StateId_PRESSED_REPEAT = 5,
-    BeButtonSm_StateId_RELEASED_DEBOUNCE = 6,
-    BeButtonSm_StateId_RELEASED_STABLE = 7,
-} BeButtonSm_StateId;
+    BeButton1Sm_StateId_ROOT = 0,
+    BeButton1Sm_StateId_PRESSED_DEBOUNCE = 1,
+    BeButton1Sm_StateId_PRESSED_STABLE = 2,
+    BeButton1Sm_StateId_CONFIRM_LONG = 3,
+    BeButton1Sm_StateId_PRESSED_LONG = 4,
+    BeButton1Sm_StateId_PRESSED_REPEAT = 5,
+    BeButton1Sm_StateId_RELEASED_DEBOUNCE = 6,
+    BeButton1Sm_StateId_RELEASED_STABLE = 7,
+} BeButton1Sm_StateId;
 
 enum
 {
-    BeButtonSm_StateIdCount = 8
+    BeButton1Sm_StateIdCount = 8
 };
 
 
 // Generated state machine
 // forward declaration
-typedef struct BeButtonSm BeButtonSm;
+typedef struct BeButton1Sm BeButton1Sm;
 
 // State machine variables. Can be used for inputs, outputs, user variables...
-typedef struct BeButtonSm_Vars
+typedef struct BeButton1Sm_Vars
 {
     // you need to add your loop time to this variable in your main loop.
     // max time is 65535 ms.
@@ -59,43 +59,43 @@ typedef struct BeButtonSm_Vars
     uint8_t output_press: 1;
     uint8_t output_long: 1;
     uint8_t output_repeat: 1;
-} BeButtonSm_Vars;
+} BeButton1Sm_Vars;
 
 
 // event handler type
-typedef void (*BeButtonSm_Func)(BeButtonSm* sm);
+typedef void (*BeButton1Sm_Func)(BeButton1Sm* sm);
 
 // State machine constructor. Must be called before start or dispatch event functions. Not thread safe.
-void BeButtonSm_ctor(BeButtonSm* sm);
+void BeButton1Sm_ctor(BeButton1Sm* sm);
 
 // Starts the state machine. Must be called before dispatching events. Not thread safe.
-void BeButtonSm_start(BeButtonSm* sm);
+void BeButton1Sm_start(BeButton1Sm* sm);
 
 // Dispatches an event to the state machine. Not thread safe.
-void BeButtonSm_dispatch_event(BeButtonSm* sm, BeButtonSm_EventId event_id);
+void BeButton1Sm_dispatch_event(BeButton1Sm* sm, BeButton1Sm_EventId event_id);
 
 // Thread safe.
-char const * BeButtonSm_state_id_to_string(BeButtonSm_StateId id);
+char const * BeButton1Sm_state_id_to_string(BeButton1Sm_StateId id);
 
 // Thread safe.
-char const * BeButtonSm_event_id_to_string(BeButtonSm_EventId id);
+char const * BeButton1Sm_event_id_to_string(BeButton1Sm_EventId id);
 
 // Generated state machine
-struct BeButtonSm
+struct BeButton1Sm
 {
     // Used internally by state machine. Feel free to inspect, but don't modify.
-    BeButtonSm_StateId state_id;
+    BeButton1Sm_StateId state_id;
     
     // Used internally by state machine. Don't modify.
-    BeButtonSm_Func ancestor_event_handler;
+    BeButton1Sm_Func ancestor_event_handler;
     
     // Used internally by state machine. Don't modify.
-    BeButtonSm_Func current_event_handlers[BeButtonSm_EventIdCount];
+    BeButton1Sm_Func current_event_handlers[BeButton1Sm_EventIdCount];
     
     // Used internally by state machine. Don't modify.
-    BeButtonSm_Func current_state_exit_handler;
+    BeButton1Sm_Func current_state_exit_handler;
     
     // Variables. Can be used for inputs, outputs, user variables...
-    BeButtonSm_Vars vars;
+    BeButton1Sm_Vars vars;
 };
 

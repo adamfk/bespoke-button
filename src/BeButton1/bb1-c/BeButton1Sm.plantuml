@@ -1,4 +1,4 @@
-@startuml BeButtonSm
+@startuml BeButton1Sm
 
 ' /////////////////////////// Styles ////////////////////////////////
 ' Define some colors for the states. Totally optional.

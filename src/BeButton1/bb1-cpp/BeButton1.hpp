@@ -1,15 +1,15 @@
 #pragma once
-#include "BeButtonSm.hpp"
-#include "BeButtonPlatform.hpp"
+#include "BeButton1Sm.hpp"
+#include "BeButton1Platform.hpp"
 
 ///////////////// structures //////////////////////
 
-class BeButton {
-    BeButtonSm sm;
-    BeButtonPin pin;
+class BeButton1 {
+    BeButton1Sm sm;
+    BeButton1Pin pin;
 
     // returns true if pin is "active"
-    static bool is_pin_active(const BeButtonPin pin);
+    static bool is_pin_active(const BeButton1Pin pin);
 
 public:
 
@@ -19,7 +19,7 @@ public:
      * @brief Setup the button state machine.
      * @note NOTE! You must initialize the pin before calling this function.
      */
-    void setup(const BeButtonPin pin);
+    void setup(const BeButton1Pin pin);
 
     /**
      * @brief Reads button pin, updates button state machine and timer.

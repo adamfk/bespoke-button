@@ -9,7 +9,7 @@
 ///////////////////////////////// ARDUINO /////////////////////////////////
 #ifdef ARDUINO
 // for Arduino
-typedef uint8_t BeButtonPin;
+typedef uint8_t BeButton1Pin;
 #endif
 
 

@@ -1,4 +1,4 @@
-@startuml BeButtonSm
+@startuml BeButton1Sm
 
 ' /////////////////////////// Styles ////////////////////////////////
 ' Define some colors for the states. Totally optional.
@@ -75,8 +75,6 @@ PRESSED_REPEAT --> PRESSED_REPEAT: [timer_ms > 250]
 /'! $CONFIG : toml
 SmRunnerSettings.transpilerId = "C99"
 
-RenderConfig.C.CFileExtension = ".cpp"
-RenderConfig.C.HFileExtension = ".hpp"
 RenderConfig.C.HFileIncludes = """
     #include <stdint.h> // for fixed width integer state machine variables below
     """
@@ -103,6 +101,6 @@ RenderConfig.AutoExpandedVars = """
 
 # Uncomment the below line to potentially save a byte or two of RAM per state machine
 # by telling GCC to use the smallest enumeration integer type possible.
-# RenderConfig.C.CEnumDeclarer = "typedef enum __attribute__((packed)) {enumName}"
+RenderConfig.C.CEnumDeclarer = "typedef enum __attribute__((packed)) {enumName}"
 '/
 @enduml
