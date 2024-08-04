@@ -12,6 +12,11 @@ skinparam state {
 ' More info: https://github.com/StateSmith/StateSmith/wiki/PlantUML
 
 state INIT
+state INIT_CHOICE<<choice>>
+
+state HELD_AT_START {
+    note "inspect state ID to detect this" as N1
+}
 
 state RELEASED_DEBOUNCE {
     note "event will cause T2 clear" as N1
@@ -20,41 +25,40 @@ state RELEASED_STABLE {
     note "Wait for press" as N1
 }
 
-state PRESSED <<press_style>> {
-    state PRESSED_DEBOUNCE {
-        note "event will cause T1 clear" as N1
+state PRESSED_DEBOUNCE <<press_style>> {
+    note "event will cause T1 clear" as N1
+}
+state PRESSED_STABLE <<press_style>> {
+    [*] -> CONFIRM_LONG
+    state CONFIRM_LONG
+    state PRESSED_LONG {
+        state NO_REPEAT
+        state DELAY_1ST_REPEAT
+        state PRESSED_REPEAT
+        [*] --> DELAY_1ST_REPEAT: else
+        [*] --> NO_REPEAT: [disable_repeat]
     }
-    state PRESSED_STABLE {
-        [*] -> CONFIRM_LONG
-        state CONFIRM_LONG
-        state PRESSED_LONG {
-            state NO_REPEAT
-            state DELAY_1ST_REPEAT
-            state PRESSED_REPEAT
-            [*] --> DELAY_1ST_REPEAT: else
-            [*] --> NO_REPEAT: [disable_repeat]
-        }
-    }
-    ' [*] -> PRESSED_DEBOUNCE
 }
 
 
 [*] -> INIT
 
 
+
 ' ///////////////////////// STATE HANDLERS /////////////////////////
 ' Syntax: https://github.com/StateSmith/StateSmith/wiki/Behaviors
 
 INIT: enter / t2_ms = 0;
-INIT -down-> RELEASED_STABLE: [t2_ms > 25]
+INIT -down-> INIT_CHOICE: [t2_ms > 25]
 
+INIT_CHOICE -left-> HELD_AT_START: [input_active]
+INIT_CHOICE --> RELEASED_STABLE: else
 
-'
-PRESSED: enter / output_press = true;
-PRESSED: exit / output_press = false;
+HELD_AT_START --> RELEASED_DEBOUNCE: [! input_active] / t2_ms = 0;
 
 ' Wait for debounce time and then go to stable state.
 RELEASED_DEBOUNCE: enter / output_release_event = true;
+RELEASED_DEBOUNCE: enter / output_press = false;
 RELEASED_DEBOUNCE -right-> RELEASED_STABLE: [t2_ms > 50]
 
 ' Button is released. Wait for button press.
@@ -62,7 +66,8 @@ RELEASED_STABLE -down-> PRESSED_DEBOUNCE: [input_active]
 
 ' Wait for debounce time and then go to stable state.
 PRESSED_DEBOUNCE: enter / output_press_event = true;
-PRESSED_DEBOUNCE -> PRESSED_STABLE: [t1_ms > 50]
+PRESSED_DEBOUNCE: enter / output_press = true;
+PRESSED_DEBOUNCE -left-> PRESSED_STABLE: [t1_ms > 50]
 
 ' Button is pressed. Wait for button release.
 PRESSED_STABLE -up-> RELEASED_DEBOUNCE: [! input_active]
@@ -84,6 +89,7 @@ PRESSED_REPEAT: enter / t2_ms = 0;
 PRESSED_REPEAT: enter / output_repeat = true;
 PRESSED_REPEAT: enter / output_repeat_event = true;
 PRESSED_REPEAT --> PRESSED_REPEAT: [t2_ms > 250]
+PRESSED_REPEAT -up-> NO_REPEAT: 1. [disable_repeat]
 
 
 ' //////////////////////// StateSmith config ////////////////////////
@@ -130,9 +136,8 @@ RenderConfig.AutoExpandedVars = """
     // they are cleared automatically.
     uint8_t output_press: 1;
     uint8_t output_long: 1;
-    // uint8_t output_repeat: 1;
 
-
+    uint8_t press_count;
     """
 
 # Uncomment the below line to potentially save a byte or two of RAM per state machine
