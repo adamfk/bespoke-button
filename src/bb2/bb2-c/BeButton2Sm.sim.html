@@ -326,7 +326,7 @@ CONFIRM_LONG --> PRESSED_LONG : do [t1_ms > 500]
 
 DELAY_1ST_REPEAT --> PRESSED_REPEAT : do [t2_ms > 350]
 
-PRESSED_REPEAT --> PRESSED_REPEAT : do [t2_ms > 250]
+PRESSED_REPEAT --> PRESSED_REPEAT : do [t2_ms > REPEAT_INTERVAL_MS]
 
 PRESSED_REPEAT --> NO_REPEAT : 1. do [disable_repeat]
 
@@ -1006,8 +1006,8 @@ evaluateGuard = null;
         } // end of behavior for PRESSED_REPEAT
         
         // PRESSED_REPEAT behavior
-        // uml: do [this.tracer?.log("🛡️ User evaluating guard: " + "t2_ms > 250") || this.evaluateGuard("t2_ms > 250")] / { this.tracer?.edgeTransition("edge13"); } TransitionTo(PRESSED_REPEAT)
-        if (this.tracer?.log("🛡️ User evaluating guard: " + "t2_ms > 250") || this.evaluateGuard("t2_ms > 250"))
+        // uml: do [this.tracer?.log("🛡️ User evaluating guard: " + "t2_ms > REPEAT_INTERVAL_MS") || this.evaluateGuard("t2_ms > REPEAT_INTERVAL_MS")] / { this.tracer?.edgeTransition("edge13"); } TransitionTo(PRESSED_REPEAT)
+        if (this.tracer?.log("🛡️ User evaluating guard: " + "t2_ms > REPEAT_INTERVAL_MS") || this.evaluateGuard("t2_ms > REPEAT_INTERVAL_MS"))
         {
             // Step 1: Exit states until we reach `PRESSED_LONG` state (Least Common Ancestor for transition).
             this.#PRESSED_REPEAT_exit();

@@ -560,8 +560,8 @@ static void PRESSED_REPEAT_do(BeButton2Sm* sm)
     } // end of behavior for PRESSED_REPEAT
     
     // PRESSED_REPEAT behavior
-    // uml: do [t2_ms > 250] TransitionTo(PRESSED_REPEAT)
-    if (sm->vars.t2_ms > 250)
+    // uml: do [t2_ms > REPEAT_INTERVAL_MS] TransitionTo(PRESSED_REPEAT)
+    if (sm->vars.t2_ms > REPEAT_INTERVAL_MS)
     {
         // Step 1: Exit states until we reach `PRESSED_LONG` state (Least Common Ancestor for transition).
         PRESSED_REPEAT_exit(sm);

@@ -108,7 +108,7 @@ DELAY_1ST_REPEAT --> PRESSED_REPEAT: [t2_ms > 350]
 ' Keep setting the button repeat event every 250 ms.
 PRESSED_REPEAT: enter / t2_ms = 0;
 PRESSED_REPEAT: enter / output_repeat_event = true;
-PRESSED_REPEAT --> PRESSED_REPEAT: [t2_ms > 250]
+PRESSED_REPEAT --> PRESSED_REPEAT: [t2_ms > REPEAT_INTERVAL_MS]
 PRESSED_REPEAT -up-> NO_REPEAT: 1. [disable_repeat]
 
 
@@ -120,6 +120,8 @@ PRESSED_REPEAT -up-> NO_REPEAT: 1. [disable_repeat]
 SmRunnerSettings.transpilerId = "C99"
 
 RenderConfig.C.HFileIncludes = """
+    #include "BeButton2Config.h"
+
     // Let other compilers ignore gcc specific attributes.
     // You can also disable GCC packed attributes by removing StateSmith setting `RenderConfig.C.CEnumDeclarer`.
     #if !defined(__GNUC__) && !defined(__clang__)

@@ -12,9 +12,9 @@ void BeButton2_setup(BeButton2 * button, const BeButton2Pin pin) {
  */
 void BeButton2_update(BeButton2 * button, uint32_t elapsed_time_ms) {
     // read pin status and set input to state machine
-    button->sm.vars.input_active = BeButton2Platform_is_pin_active(button->pin);
+    button->sm.vars.input_active = BeButton2_is_pin_active(button->pin);
 
-    // Handle special events.
+    // Handle special events from previous state machine run.
     // MUST happen before updating timer.
     if (button->sm.vars.output_release_event) {
         button->sm.vars.output_release_event = false;

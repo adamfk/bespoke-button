@@ -4,6 +4,8 @@
 #pragma once
 #include <stdint.h>
 
+#include "BeButton2Config.h"
+
 // Let other compilers ignore gcc specific attributes.
 // You can also disable GCC packed attributes by removing StateSmith setting `RenderConfig.C.CEnumDeclarer`.
 #if !defined(__GNUC__) && !defined(__clang__)

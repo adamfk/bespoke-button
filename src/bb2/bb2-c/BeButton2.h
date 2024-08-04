@@ -1,10 +1,25 @@
 #pragma once
 #include "BeButton2Sm.h"
-#include "BeButton2Platform.h"
+#include <stdbool.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+///////////////// platform specific section //////////////////////
+
+#ifdef ARDUINO
+// for Arduino
+typedef uint8_t BeButton2Pin;
+#else
+// just assume uint8_t for now
+typedef uint8_t BeButton2Pin;
+#endif
+
+// returns true if pin is "active"
+// must be implemented by user
+bool BeButton2_is_pin_active(const BeButton2Pin pin);
+
 
 ///////////////// structures //////////////////////
 

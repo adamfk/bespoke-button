@@ -1,5 +1,7 @@
 {
     "files.associations": {
-        "bebutton2platform.h": "c"
+        "bebutton2platform.h": "c",
+        "bebutton2.h": "c",
+        "bebutton2sm.h": "c"
     }
 }

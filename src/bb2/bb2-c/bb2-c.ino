@@ -28,7 +28,7 @@ static uint32_t last_loop_ms = 0;
 // extern "C" functions
 ////////////////////////////////////////////////////////////////////////////////
 
-extern "C" bool BeButton2Platform_is_pin_active(const BeButton2Pin pin)
+extern "C" bool BeButton2_is_pin_active(const BeButton2Pin pin)
 {
     return (digitalRead(pin) == LOW);
 }
