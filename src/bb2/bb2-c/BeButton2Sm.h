@@ -35,14 +35,15 @@ typedef enum __attribute__((packed)) BeButton2Sm_StateId
     BeButton2Sm_StateId_PRESSED_REPEAT = 8,
     BeButton2Sm_StateId_RELEASED_DEBOUNCE = 9,
     BeButton2Sm_StateId_RELEASED_STABLE = 10,
-    BeButton2Sm_StateId_SEQUENCE = 11,
+    BeButton2Sm_StateId_SEQUENCE_CONTINUE = 11,
     BeButton2Sm_StateId_SEQUENCE_END = 12,
     BeButton2Sm_StateId_STARTUP_DELAY = 13,
+    BeButton2Sm_StateId_WAIT_FIRST_PRESS = 14,
 } BeButton2Sm_StateId;
 
 enum
 {
-    BeButton2Sm_StateIdCount = 14
+    BeButton2Sm_StateIdCount = 15
 };
 
 

@@ -12,3 +12,12 @@
 
 // milliseconds
 #define REPEAT_INTERVAL 250
+
+// milliseconds
+// Max time for a button press hold before it ends a click/press sequence
+#define SEQ_PRESS_MAX 500
+
+
+// milliseconds
+// Max time for a button release before it ends a click/press sequence
+#define SEQ_RELEASE_MAX 500

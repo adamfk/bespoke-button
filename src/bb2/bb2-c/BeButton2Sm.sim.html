@@ -220,6 +220,8 @@ STARTUP_DELAY
 
 STARTUP_DELAY : STARTUP_DELAY
 
+STARTUP_DELAY : enter / #123; output_press = false#59; #125;
+
 state ROOT.(ChoicePoint)(INIT_CHOICE) <<choice>>
 
 HELD_AT_START
@@ -228,41 +230,47 @@ HELD_AT_START : HELD_AT_START
 
 HELD_AT_START : enter / #123; output_press = true#59; #125;
 
-HELD_AT_START : 1. do / #123; t2_ms = 0#59; #125;
+HELD_AT_START : enter / #123; t1_ms = t2_ms#59; #125;
+
+HELD_AT_START : enter / #123; t2_ms = 0#59; #125;
 
 RELEASED_DEBOUNCE
 
 RELEASED_DEBOUNCE : RELEASED_DEBOUNCE
 
-RELEASED_DEBOUNCE : enter / #123; output_release_event = true#59; #125;
-
 RELEASED_DEBOUNCE : enter / #123; output_press = false#59; #125;
+
+RELEASED_DEBOUNCE : enter / #123; output_release_event = true#59; #125;
 
 state RELEASED_STABLE {
 
-        SEQUENCE
+        SEQUENCE_CONTINUE
 
-        SEQUENCE : SEQUENCE
+        SEQUENCE_CONTINUE : SEQUENCE_CONTINUE
 
         SEQUENCE_END
 
         SEQUENCE_END : SEQUENCE_END
 
-        SEQUENCE_END : enter [press_count > 0] / #123; output_seq_end_event = true#59; #125;
+        SEQUENCE_END : enter / #123; output_seq_end_event = true#59; #125;
 
         state "$initial_state" as RELEASED_STABLE.(InitialState)
 
 }
 
+WAIT_FIRST_PRESS
+
+WAIT_FIRST_PRESS : WAIT_FIRST_PRESS
+
 PRESSED_DEBOUNCE
 
 PRESSED_DEBOUNCE : PRESSED_DEBOUNCE
 
-PRESSED_DEBOUNCE : enter / #123; press_count++#59; #125;
+PRESSED_DEBOUNCE : enter / #123; output_press = true#59; #125;
 
 PRESSED_DEBOUNCE : enter / #123; output_press_event = true#59; #125;
 
-PRESSED_DEBOUNCE : enter / #123; output_press = true#59; #125;
+PRESSED_DEBOUNCE : enter / #123; press_count++#59; #125;
 
 state PRESSED_STABLE {
 
@@ -281,8 +289,6 @@ state PRESSED_STABLE {
                 DELAY_1ST_REPEAT
 
                 DELAY_1ST_REPEAT : DELAY_1ST_REPEAT
-
-                DELAY_1ST_REPEAT : enter / #123; t2_ms = 0#59; #125;
 
                 PRESSED_REPEAT
 
@@ -304,7 +310,7 @@ STARTUP_DELAY --> ROOT.(ChoicePoint)(INIT_CHOICE) : do [t2_ms > 25]
 
 ROOT.(ChoicePoint)(INIT_CHOICE) --> HELD_AT_START : [input_active]
 
-ROOT.(ChoicePoint)(INIT_CHOICE) --> RELEASED_STABLE : else
+ROOT.(ChoicePoint)(INIT_CHOICE) --> WAIT_FIRST_PRESS : else
 
 HELD_AT_START --> RELEASED_DEBOUNCE : do [! input_active]
 
@@ -312,9 +318,11 @@ RELEASED_DEBOUNCE --> RELEASED_STABLE : do [t2_ms > 50]
 
 RELEASED_STABLE --> PRESSED_DEBOUNCE : do [input_active]
 
-SEQUENCE --> SEQUENCE_END : do [t2_ms > 500]
+SEQUENCE_CONTINUE --> SEQUENCE_END : do [t2_ms > SEQ_RELEASE_MAX]
 
-RELEASED_STABLE.(InitialState) --> SEQUENCE
+RELEASED_STABLE.(InitialState) --> SEQUENCE_CONTINUE
+
+WAIT_FIRST_PRESS --> PRESSED_DEBOUNCE : do [input_active]
 
 PRESSED_DEBOUNCE --> PRESSED_STABLE : do [t1_ms > 50]
 
@@ -322,11 +330,11 @@ PRESSED_STABLE --> RELEASED_DEBOUNCE : do [! input_active]
 
 PRESSED_STABLE.(InitialState) --> CONFIRM_LONG
 
-CONFIRM_LONG --> PRESSED_LONG : do [t1_ms > 500]
+CONFIRM_LONG --> PRESSED_LONG : do [t1_ms > LONG_PRESS]
 
-DELAY_1ST_REPEAT --> PRESSED_REPEAT : do [t2_ms > 350]
+DELAY_1ST_REPEAT --> PRESSED_REPEAT : do [t1_ms > LONG_PRESS + REPEAT_DELAY]
 
-PRESSED_REPEAT --> PRESSED_REPEAT : do [t2_ms > REPEAT_INTERVAL_MS]
+PRESSED_REPEAT --> PRESSED_REPEAT : do [t2_ms > REPEAT_INTERVAL]
 
 PRESSED_REPEAT --> NO_REPEAT : 1. do [disable_repeat]
 
@@ -399,13 +407,14 @@ evaluateGuard = null;
         PRESSED_REPEAT : 8,
         RELEASED_DEBOUNCE : 9,
         RELEASED_STABLE : 10,
-        SEQUENCE : 11,
+        SEQUENCE_CONTINUE : 11,
         SEQUENCE_END : 12,
         STARTUP_DELAY : 13,
+        WAIT_FIRST_PRESS : 14,
     }
     static { Object.freeze(this.StateId); }
     
-    static StateIdCount = 14;
+    static StateIdCount = 15;
     static { Object.freeze(this.StateIdCount); }
     
     // Used internally by state machine. Feel free to inspect, but don't modify.
@@ -435,12 +444,12 @@ evaluateGuard = null;
             // ROOT.<InitialState> is a pseudo state and cannot have an `enter` trigger.
             
             // ROOT.<InitialState> behavior
-            // uml: / { this.tracer?.edgeTransition("edge17"); } TransitionTo(STARTUP_DELAY)
+            // uml: / { this.tracer?.edgeTransition("edge18"); } TransitionTo(STARTUP_DELAY)
             {
                 // Step 1: Exit states until we reach `ROOT` state (Least Common Ancestor for transition). Already at LCA, no exiting required.
                 
-                // Step 2: Transition action: `this.tracer?.edgeTransition("edge17");`.
-                this.tracer?.edgeTransition("edge17");
+                // Step 2: Transition action: `this.tracer?.edgeTransition("edge18");`.
+                this.tracer?.edgeTransition("edge18");
                 
                 // Step 3: Enter/move towards transition target `STARTUP_DELAY`.
                 this.#STARTUP_DELAY_enter();
@@ -515,6 +524,20 @@ evaluateGuard = null;
             // Step 1: execute action `this.tracer?.log("⚡ FSM would execute action: " + "output_press = true;");`
             this.tracer?.log("⚡ FSM would execute action: " + "output_press = true;");
         } // end of behavior for HELD_AT_START
+        
+        // HELD_AT_START behavior
+        // uml: enter / { this.tracer?.log("⚡ FSM would execute action: " + "t1_ms = t2_ms;"); }
+        {
+            // Step 1: execute action `this.tracer?.log("⚡ FSM would execute action: " + "t1_ms = t2_ms;");`
+            this.tracer?.log("⚡ FSM would execute action: " + "t1_ms = t2_ms;");
+        } // end of behavior for HELD_AT_START
+        
+        // HELD_AT_START behavior
+        // uml: enter / { this.tracer?.log("⚡ FSM would execute action: " + "t2_ms = 0;"); }
+        {
+            // Step 1: execute action `this.tracer?.log("⚡ FSM would execute action: " + "t2_ms = 0;");`
+            this.tracer?.log("⚡ FSM would execute action: " + "t2_ms = 0;");
+        } // end of behavior for HELD_AT_START
     }
     
     #HELD_AT_START_exit()
@@ -534,16 +557,6 @@ evaluateGuard = null;
     #HELD_AT_START_do()
     {
         // No ancestor state handles `do` event.
-        
-        // HELD_AT_START behavior
-        // uml: 1. do / { this.tracer?.log("⚡ FSM would execute action: " + "t2_ms = 0;"); }
-        {
-            // Step 1: execute action `this.tracer?.log("⚡ FSM would execute action: " + "t2_ms = 0;");`
-            this.tracer?.log("⚡ FSM would execute action: " + "t2_ms = 0;");
-            
-            // Step 2: determine if ancestor gets to handle event next.
-            // Don't consume special `do` event.
-        } // end of behavior for HELD_AT_START
         
         // HELD_AT_START behavior
         // uml: do [this.tracer?.log("🛡️ User evaluating guard: " + "! input_active") || this.evaluateGuard("! input_active")] / { this.tracer?.edgeTransition("edge3"); } TransitionTo(RELEASED_DEBOUNCE)
@@ -584,10 +597,10 @@ evaluateGuard = null;
         } // end of behavior for PRESSED_DEBOUNCE
         
         // PRESSED_DEBOUNCE behavior
-        // uml: enter / { this.tracer?.log("⚡ FSM would execute action: " + "press_count++;"); }
+        // uml: enter / { this.tracer?.log("⚡ FSM would execute action: " + "output_press = true;"); }
         {
-            // Step 1: execute action `this.tracer?.log("⚡ FSM would execute action: " + "press_count++;");`
-            this.tracer?.log("⚡ FSM would execute action: " + "press_count++;");
+            // Step 1: execute action `this.tracer?.log("⚡ FSM would execute action: " + "output_press = true;");`
+            this.tracer?.log("⚡ FSM would execute action: " + "output_press = true;");
         } // end of behavior for PRESSED_DEBOUNCE
         
         // PRESSED_DEBOUNCE behavior
@@ -598,10 +611,10 @@ evaluateGuard = null;
         } // end of behavior for PRESSED_DEBOUNCE
         
         // PRESSED_DEBOUNCE behavior
-        // uml: enter / { this.tracer?.log("⚡ FSM would execute action: " + "output_press = true;"); }
+        // uml: enter / { this.tracer?.log("⚡ FSM would execute action: " + "press_count++;"); }
         {
-            // Step 1: execute action `this.tracer?.log("⚡ FSM would execute action: " + "output_press = true;");`
-            this.tracer?.log("⚡ FSM would execute action: " + "output_press = true;");
+            // Step 1: execute action `this.tracer?.log("⚡ FSM would execute action: " + "press_count++;");`
+            this.tracer?.log("⚡ FSM would execute action: " + "press_count++;");
         } // end of behavior for PRESSED_DEBOUNCE
     }
     
@@ -624,25 +637,25 @@ evaluateGuard = null;
         // No ancestor state handles `do` event.
         
         // PRESSED_DEBOUNCE behavior
-        // uml: do [this.tracer?.log("🛡️ User evaluating guard: " + "t1_ms > 50") || this.evaluateGuard("t1_ms > 50")] / { this.tracer?.edgeTransition("edge8"); } TransitionTo(PRESSED_STABLE)
+        // uml: do [this.tracer?.log("🛡️ User evaluating guard: " + "t1_ms > 50") || this.evaluateGuard("t1_ms > 50")] / { this.tracer?.edgeTransition("edge9"); } TransitionTo(PRESSED_STABLE)
         if (this.tracer?.log("🛡️ User evaluating guard: " + "t1_ms > 50") || this.evaluateGuard("t1_ms > 50"))
         {
             // Step 1: Exit states until we reach `ROOT` state (Least Common Ancestor for transition).
             this.#PRESSED_DEBOUNCE_exit();
             
-            // Step 2: Transition action: `this.tracer?.edgeTransition("edge8");`.
-            this.tracer?.edgeTransition("edge8");
+            // Step 2: Transition action: `this.tracer?.edgeTransition("edge9");`.
+            this.tracer?.edgeTransition("edge9");
             
             // Step 3: Enter/move towards transition target `PRESSED_STABLE`.
             this.#PRESSED_STABLE_enter();
             
             // PRESSED_STABLE.<InitialState> behavior
-            // uml: / { this.tracer?.edgeTransition("edge10"); } TransitionTo(CONFIRM_LONG)
+            // uml: / { this.tracer?.edgeTransition("edge11"); } TransitionTo(CONFIRM_LONG)
             {
                 // Step 1: Exit states until we reach `PRESSED_STABLE` state (Least Common Ancestor for transition). Already at LCA, no exiting required.
                 
-                // Step 2: Transition action: `this.tracer?.edgeTransition("edge10");`.
-                this.tracer?.edgeTransition("edge10");
+                // Step 2: Transition action: `this.tracer?.edgeTransition("edge11");`.
+                this.tracer?.edgeTransition("edge11");
                 
                 // Step 3: Enter/move towards transition target `CONFIRM_LONG`.
                 this.#CONFIRM_LONG_enter();
@@ -693,14 +706,25 @@ evaluateGuard = null;
         // No ancestor state handles `do` event.
         
         // PRESSED_STABLE behavior
-        // uml: do [this.tracer?.log("🛡️ User evaluating guard: " + "! input_active") || this.evaluateGuard("! input_active")] / { this.tracer?.edgeTransition("edge9"); } TransitionTo(RELEASED_DEBOUNCE)
+        // uml: do [this.tracer?.log("🛡️ User evaluating guard: " + "press_count > 0 && t1_ms > SEQ_PRESS_MAX") || this.evaluateGuard("press_count > 0 && t1_ms > SEQ_PRESS_MAX")] / { this.tracer?.log("⚡ FSM would execute action: " + "output_seq_end_event = true;"); }
+        if (this.tracer?.log("🛡️ User evaluating guard: " + "press_count > 0 && t1_ms > SEQ_PRESS_MAX") || this.evaluateGuard("press_count > 0 && t1_ms > SEQ_PRESS_MAX"))
+        {
+            // Step 1: execute action `this.tracer?.log("⚡ FSM would execute action: " + "output_seq_end_event = true;");`
+            this.tracer?.log("⚡ FSM would execute action: " + "output_seq_end_event = true;");
+            
+            // Step 2: determine if ancestor gets to handle event next.
+            // Don't consume special `do` event.
+        } // end of behavior for PRESSED_STABLE
+        
+        // PRESSED_STABLE behavior
+        // uml: do [this.tracer?.log("🛡️ User evaluating guard: " + "! input_active") || this.evaluateGuard("! input_active")] / { this.tracer?.edgeTransition("edge10"); } TransitionTo(RELEASED_DEBOUNCE)
         if (this.tracer?.log("🛡️ User evaluating guard: " + "! input_active") || this.evaluateGuard("! input_active"))
         {
             // Step 1: Exit states until we reach `ROOT` state (Least Common Ancestor for transition).
             this.#exitUpToStateHandler(this.#ROOT_exit);
             
-            // Step 2: Transition action: `this.tracer?.edgeTransition("edge9");`.
-            this.tracer?.edgeTransition("edge9");
+            // Step 2: Transition action: `this.tracer?.edgeTransition("edge10");`.
+            this.tracer?.edgeTransition("edge10");
             
             // Step 3: Enter/move towards transition target `RELEASED_DEBOUNCE`.
             this.#RELEASED_DEBOUNCE_enter();
@@ -751,26 +775,26 @@ evaluateGuard = null;
         this.#ancestorEventHandler = this.#PRESSED_STABLE_do;
         
         // CONFIRM_LONG behavior
-        // uml: do [this.tracer?.log("🛡️ User evaluating guard: " + "t1_ms > 500") || this.evaluateGuard("t1_ms > 500")] / { this.tracer?.edgeTransition("edge11"); } TransitionTo(PRESSED_LONG)
-        if (this.tracer?.log("🛡️ User evaluating guard: " + "t1_ms > 500") || this.evaluateGuard("t1_ms > 500"))
+        // uml: do [this.tracer?.log("🛡️ User evaluating guard: " + "t1_ms > LONG_PRESS") || this.evaluateGuard("t1_ms > LONG_PRESS")] / { this.tracer?.edgeTransition("edge12"); } TransitionTo(PRESSED_LONG)
+        if (this.tracer?.log("🛡️ User evaluating guard: " + "t1_ms > LONG_PRESS") || this.evaluateGuard("t1_ms > LONG_PRESS"))
         {
             // Step 1: Exit states until we reach `PRESSED_STABLE` state (Least Common Ancestor for transition).
             this.#CONFIRM_LONG_exit();
             
-            // Step 2: Transition action: `this.tracer?.edgeTransition("edge11");`.
-            this.tracer?.edgeTransition("edge11");
+            // Step 2: Transition action: `this.tracer?.edgeTransition("edge12");`.
+            this.tracer?.edgeTransition("edge12");
             
             // Step 3: Enter/move towards transition target `PRESSED_LONG`.
             this.#PRESSED_LONG_enter();
             
             // PRESSED_LONG.<InitialState> behavior
-            // uml: [this.tracer?.log("🛡️ User evaluating guard: " + "disable_repeat") || this.evaluateGuard("disable_repeat")] / { this.tracer?.edgeTransition("edge16"); } TransitionTo(NO_REPEAT)
+            // uml: [this.tracer?.log("🛡️ User evaluating guard: " + "disable_repeat") || this.evaluateGuard("disable_repeat")] / { this.tracer?.edgeTransition("edge17"); } TransitionTo(NO_REPEAT)
             if (this.tracer?.log("🛡️ User evaluating guard: " + "disable_repeat") || this.evaluateGuard("disable_repeat"))
             {
                 // Step 1: Exit states until we reach `PRESSED_LONG` state (Least Common Ancestor for transition). Already at LCA, no exiting required.
                 
-                // Step 2: Transition action: `this.tracer?.edgeTransition("edge16");`.
-                this.tracer?.edgeTransition("edge16");
+                // Step 2: Transition action: `this.tracer?.edgeTransition("edge17");`.
+                this.tracer?.edgeTransition("edge17");
                 
                 // Step 3: Enter/move towards transition target `NO_REPEAT`.
                 this.#NO_REPEAT_enter();
@@ -782,12 +806,12 @@ evaluateGuard = null;
             } // end of behavior for PRESSED_LONG.<InitialState>
             
             // PRESSED_LONG.<InitialState> behavior
-            // uml: else / { this.tracer?.edgeTransition("edge15"); } TransitionTo(DELAY_1ST_REPEAT)
+            // uml: else / { this.tracer?.edgeTransition("edge16"); } TransitionTo(DELAY_1ST_REPEAT)
             {
                 // Step 1: Exit states until we reach `PRESSED_LONG` state (Least Common Ancestor for transition). Already at LCA, no exiting required.
                 
-                // Step 2: Transition action: `this.tracer?.edgeTransition("edge15");`.
-                this.tracer?.edgeTransition("edge15");
+                // Step 2: Transition action: `this.tracer?.edgeTransition("edge16");`.
+                this.tracer?.edgeTransition("edge16");
                 
                 // Step 3: Enter/move towards transition target `DELAY_1ST_REPEAT`.
                 this.#DELAY_1ST_REPEAT_enter();
@@ -855,13 +879,6 @@ evaluateGuard = null;
             // Step 1: execute action `this.tracer?.enterState('DELAY_1ST_REPEAT');`
             this.tracer?.enterState('DELAY_1ST_REPEAT');
         } // end of behavior for DELAY_1ST_REPEAT
-        
-        // DELAY_1ST_REPEAT behavior
-        // uml: enter / { this.tracer?.log("⚡ FSM would execute action: " + "t2_ms = 0;"); }
-        {
-            // Step 1: execute action `this.tracer?.log("⚡ FSM would execute action: " + "t2_ms = 0;");`
-            this.tracer?.log("⚡ FSM would execute action: " + "t2_ms = 0;");
-        } // end of behavior for DELAY_1ST_REPEAT
     }
     
     #DELAY_1ST_REPEAT_exit()
@@ -884,14 +901,14 @@ evaluateGuard = null;
         this.#ancestorEventHandler = this.#PRESSED_STABLE_do;
         
         // DELAY_1ST_REPEAT behavior
-        // uml: do [this.tracer?.log("🛡️ User evaluating guard: " + "t2_ms > 350") || this.evaluateGuard("t2_ms > 350")] / { this.tracer?.edgeTransition("edge12"); } TransitionTo(PRESSED_REPEAT)
-        if (this.tracer?.log("🛡️ User evaluating guard: " + "t2_ms > 350") || this.evaluateGuard("t2_ms > 350"))
+        // uml: do [this.tracer?.log("🛡️ User evaluating guard: " + "t1_ms > LONG_PRESS + REPEAT_DELAY") || this.evaluateGuard("t1_ms > LONG_PRESS + REPEAT_DELAY")] / { this.tracer?.edgeTransition("edge13"); } TransitionTo(PRESSED_REPEAT)
+        if (this.tracer?.log("🛡️ User evaluating guard: " + "t1_ms > LONG_PRESS + REPEAT_DELAY") || this.evaluateGuard("t1_ms > LONG_PRESS + REPEAT_DELAY"))
         {
             // Step 1: Exit states until we reach `PRESSED_LONG` state (Least Common Ancestor for transition).
             this.#DELAY_1ST_REPEAT_exit();
             
-            // Step 2: Transition action: `this.tracer?.edgeTransition("edge12");`.
-            this.tracer?.edgeTransition("edge12");
+            // Step 2: Transition action: `this.tracer?.edgeTransition("edge13");`.
+            this.tracer?.edgeTransition("edge13");
             
             // Step 3: Enter/move towards transition target `PRESSED_REPEAT`.
             this.#PRESSED_REPEAT_enter();
@@ -987,14 +1004,14 @@ evaluateGuard = null;
         this.#ancestorEventHandler = this.#PRESSED_STABLE_do;
         
         // PRESSED_REPEAT behavior
-        // uml: 1. do [this.tracer?.log("🛡️ User evaluating guard: " + "disable_repeat") || this.evaluateGuard("disable_repeat")] / { this.tracer?.edgeTransition("edge14"); } TransitionTo(NO_REPEAT)
+        // uml: 1. do [this.tracer?.log("🛡️ User evaluating guard: " + "disable_repeat") || this.evaluateGuard("disable_repeat")] / { this.tracer?.edgeTransition("edge15"); } TransitionTo(NO_REPEAT)
         if (this.tracer?.log("🛡️ User evaluating guard: " + "disable_repeat") || this.evaluateGuard("disable_repeat"))
         {
             // Step 1: Exit states until we reach `PRESSED_LONG` state (Least Common Ancestor for transition).
             this.#PRESSED_REPEAT_exit();
             
-            // Step 2: Transition action: `this.tracer?.edgeTransition("edge14");`.
-            this.tracer?.edgeTransition("edge14");
+            // Step 2: Transition action: `this.tracer?.edgeTransition("edge15");`.
+            this.tracer?.edgeTransition("edge15");
             
             // Step 3: Enter/move towards transition target `NO_REPEAT`.
             this.#NO_REPEAT_enter();
@@ -1006,14 +1023,14 @@ evaluateGuard = null;
         } // end of behavior for PRESSED_REPEAT
         
         // PRESSED_REPEAT behavior
-        // uml: do [this.tracer?.log("🛡️ User evaluating guard: " + "t2_ms > REPEAT_INTERVAL_MS") || this.evaluateGuard("t2_ms > REPEAT_INTERVAL_MS")] / { this.tracer?.edgeTransition("edge13"); } TransitionTo(PRESSED_REPEAT)
-        if (this.tracer?.log("🛡️ User evaluating guard: " + "t2_ms > REPEAT_INTERVAL_MS") || this.evaluateGuard("t2_ms > REPEAT_INTERVAL_MS"))
+        // uml: do [this.tracer?.log("🛡️ User evaluating guard: " + "t2_ms > REPEAT_INTERVAL") || this.evaluateGuard("t2_ms > REPEAT_INTERVAL")] / { this.tracer?.edgeTransition("edge14"); } TransitionTo(PRESSED_REPEAT)
+        if (this.tracer?.log("🛡️ User evaluating guard: " + "t2_ms > REPEAT_INTERVAL") || this.evaluateGuard("t2_ms > REPEAT_INTERVAL"))
         {
             // Step 1: Exit states until we reach `PRESSED_LONG` state (Least Common Ancestor for transition).
             this.#PRESSED_REPEAT_exit();
             
-            // Step 2: Transition action: `this.tracer?.edgeTransition("edge13");`.
-            this.tracer?.edgeTransition("edge13");
+            // Step 2: Transition action: `this.tracer?.edgeTransition("edge14");`.
+            this.tracer?.edgeTransition("edge14");
             
             // Step 3: Enter/move towards transition target `PRESSED_REPEAT`.
             this.#PRESSED_REPEAT_enter();
@@ -1044,17 +1061,17 @@ evaluateGuard = null;
         } // end of behavior for RELEASED_DEBOUNCE
         
         // RELEASED_DEBOUNCE behavior
-        // uml: enter / { this.tracer?.log("⚡ FSM would execute action: " + "output_release_event = true;"); }
-        {
-            // Step 1: execute action `this.tracer?.log("⚡ FSM would execute action: " + "output_release_event = true;");`
-            this.tracer?.log("⚡ FSM would execute action: " + "output_release_event = true;");
-        } // end of behavior for RELEASED_DEBOUNCE
-        
-        // RELEASED_DEBOUNCE behavior
         // uml: enter / { this.tracer?.log("⚡ FSM would execute action: " + "output_press = false;"); }
         {
             // Step 1: execute action `this.tracer?.log("⚡ FSM would execute action: " + "output_press = false;");`
             this.tracer?.log("⚡ FSM would execute action: " + "output_press = false;");
+        } // end of behavior for RELEASED_DEBOUNCE
+        
+        // RELEASED_DEBOUNCE behavior
+        // uml: enter / { this.tracer?.log("⚡ FSM would execute action: " + "output_release_event = true;"); }
+        {
+            // Step 1: execute action `this.tracer?.log("⚡ FSM would execute action: " + "output_release_event = true;");`
+            this.tracer?.log("⚡ FSM would execute action: " + "output_release_event = true;");
         } // end of behavior for RELEASED_DEBOUNCE
     }
     
@@ -1089,9 +1106,22 @@ evaluateGuard = null;
             // Step 3: Enter/move towards transition target `RELEASED_STABLE`.
             this.#RELEASED_STABLE_enter();
             
-            // Finish transition by calling pseudo state transition function.
-            this.#RELEASED_STABLE_InitialState_transition();
-            return; // event processing immediately stops when a transition finishes. No other behaviors for this state are checked.
+            // RELEASED_STABLE.<InitialState> behavior
+            // uml: / { this.tracer?.edgeTransition("edge7"); } TransitionTo(SEQUENCE_CONTINUE)
+            {
+                // Step 1: Exit states until we reach `RELEASED_STABLE` state (Least Common Ancestor for transition). Already at LCA, no exiting required.
+                
+                // Step 2: Transition action: `this.tracer?.edgeTransition("edge7");`.
+                this.tracer?.edgeTransition("edge7");
+                
+                // Step 3: Enter/move towards transition target `SEQUENCE_CONTINUE`.
+                this.#SEQUENCE_CONTINUE_enter();
+                
+                // Step 4: complete transition. Ends event dispatch. No other behaviors are checked.
+                this.stateId = BeButton2Sm.StateId.SEQUENCE_CONTINUE;
+                // No ancestor handles event. Can skip nulling `ancestorEventHandler`.
+                return;
+            } // end of behavior for RELEASED_STABLE.<InitialState>
         } // end of behavior for RELEASED_DEBOUNCE
     }
     
@@ -1152,70 +1182,50 @@ evaluateGuard = null;
         } // end of behavior for RELEASED_STABLE
     }
     
-    #RELEASED_STABLE_InitialState_transition()
-    {
-        // RELEASED_STABLE.<InitialState> behavior
-        // uml: / { this.tracer?.edgeTransition("edge7"); } TransitionTo(SEQUENCE)
-        {
-            // Step 1: Exit states until we reach `RELEASED_STABLE` state (Least Common Ancestor for transition). Already at LCA, no exiting required.
-            
-            // Step 2: Transition action: `this.tracer?.edgeTransition("edge7");`.
-            this.tracer?.edgeTransition("edge7");
-            
-            // Step 3: Enter/move towards transition target `SEQUENCE`.
-            this.#SEQUENCE_enter();
-            
-            // Step 4: complete transition. Ends event dispatch. No other behaviors are checked.
-            this.stateId = BeButton2Sm.StateId.SEQUENCE;
-            this.#ancestorEventHandler = null;
-            return;
-        } // end of behavior for RELEASED_STABLE.<InitialState>
-    }
-    
     
     ////////////////////////////////////////////////////////////////////////////////
-    // event handlers for state SEQUENCE
+    // event handlers for state SEQUENCE_CONTINUE
     ////////////////////////////////////////////////////////////////////////////////
     
-    #SEQUENCE_enter()
+    #SEQUENCE_CONTINUE_enter()
     {
         // setup trigger/event handlers
-        this.#currentStateExitHandler = this.#SEQUENCE_exit;
-        this.#currentEventHandlers[BeButton2Sm.EventId.DO] = this.#SEQUENCE_do;
+        this.#currentStateExitHandler = this.#SEQUENCE_CONTINUE_exit;
+        this.#currentEventHandlers[BeButton2Sm.EventId.DO] = this.#SEQUENCE_CONTINUE_do;
         
-        // SEQUENCE behavior
-        // uml: enter / { this.tracer?.enterState('SEQUENCE'); }
+        // SEQUENCE_CONTINUE behavior
+        // uml: enter / { this.tracer?.enterState('SEQUENCE_CONTINUE'); }
         {
-            // Step 1: execute action `this.tracer?.enterState('SEQUENCE');`
-            this.tracer?.enterState('SEQUENCE');
-        } // end of behavior for SEQUENCE
+            // Step 1: execute action `this.tracer?.enterState('SEQUENCE_CONTINUE');`
+            this.tracer?.enterState('SEQUENCE_CONTINUE');
+        } // end of behavior for SEQUENCE_CONTINUE
     }
     
-    #SEQUENCE_exit()
+    #SEQUENCE_CONTINUE_exit()
     {
-        // SEQUENCE behavior
-        // uml: exit / { this.tracer?.exitState('SEQUENCE'); }
+        // SEQUENCE_CONTINUE behavior
+        // uml: exit / { this.tracer?.exitState('SEQUENCE_CONTINUE'); }
         {
-            // Step 1: execute action `this.tracer?.exitState('SEQUENCE');`
-            this.tracer?.exitState('SEQUENCE');
-        } // end of behavior for SEQUENCE
+            // Step 1: execute action `this.tracer?.exitState('SEQUENCE_CONTINUE');`
+            this.tracer?.exitState('SEQUENCE_CONTINUE');
+        } // end of behavior for SEQUENCE_CONTINUE
         
         // adjust function pointers for this state's exit
         this.#currentStateExitHandler = this.#RELEASED_STABLE_exit;
         this.#currentEventHandlers[BeButton2Sm.EventId.DO] = this.#RELEASED_STABLE_do;  // the next ancestor that handles this event is RELEASED_STABLE
     }
     
-    #SEQUENCE_do()
+    #SEQUENCE_CONTINUE_do()
     {
         // Setup handler for next ancestor that listens to `do` event.
         this.#ancestorEventHandler = this.#RELEASED_STABLE_do;
         
-        // SEQUENCE behavior
-        // uml: do [this.tracer?.log("🛡️ User evaluating guard: " + "t2_ms > 500") || this.evaluateGuard("t2_ms > 500")] / { this.tracer?.edgeTransition("edge6"); } TransitionTo(SEQUENCE_END)
-        if (this.tracer?.log("🛡️ User evaluating guard: " + "t2_ms > 500") || this.evaluateGuard("t2_ms > 500"))
+        // SEQUENCE_CONTINUE behavior
+        // uml: do [this.tracer?.log("🛡️ User evaluating guard: " + "t2_ms > SEQ_RELEASE_MAX") || this.evaluateGuard("t2_ms > SEQ_RELEASE_MAX")] / { this.tracer?.edgeTransition("edge6"); } TransitionTo(SEQUENCE_END)
+        if (this.tracer?.log("🛡️ User evaluating guard: " + "t2_ms > SEQ_RELEASE_MAX") || this.evaluateGuard("t2_ms > SEQ_RELEASE_MAX"))
         {
             // Step 1: Exit states until we reach `RELEASED_STABLE` state (Least Common Ancestor for transition).
-            this.#SEQUENCE_exit();
+            this.#SEQUENCE_CONTINUE_exit();
             
             // Step 2: Transition action: `this.tracer?.edgeTransition("edge6");`.
             this.tracer?.edgeTransition("edge6");
@@ -1227,7 +1237,7 @@ evaluateGuard = null;
             this.stateId = BeButton2Sm.StateId.SEQUENCE_END;
             this.#ancestorEventHandler = null;
             return;
-        } // end of behavior for SEQUENCE
+        } // end of behavior for SEQUENCE_CONTINUE
     }
     
     
@@ -1248,8 +1258,7 @@ evaluateGuard = null;
         } // end of behavior for SEQUENCE_END
         
         // SEQUENCE_END behavior
-        // uml: enter [this.tracer?.log("🛡️ User evaluating guard: " + "press_count > 0") || this.evaluateGuard("press_count > 0")] / { this.tracer?.log("⚡ FSM would execute action: " + "output_seq_end_event = true;"); }
-        if (this.tracer?.log("🛡️ User evaluating guard: " + "press_count > 0") || this.evaluateGuard("press_count > 0"))
+        // uml: enter / { this.tracer?.log("⚡ FSM would execute action: " + "output_seq_end_event = true;"); }
         {
             // Step 1: execute action `this.tracer?.log("⚡ FSM would execute action: " + "output_seq_end_event = true;");`
             this.tracer?.log("⚡ FSM would execute action: " + "output_seq_end_event = true;");
@@ -1285,6 +1294,13 @@ evaluateGuard = null;
         {
             // Step 1: execute action `this.tracer?.enterState('STARTUP_DELAY');`
             this.tracer?.enterState('STARTUP_DELAY');
+        } // end of behavior for STARTUP_DELAY
+        
+        // STARTUP_DELAY behavior
+        // uml: enter / { this.tracer?.log("⚡ FSM would execute action: " + "output_press = false;"); }
+        {
+            // Step 1: execute action `this.tracer?.log("⚡ FSM would execute action: " + "output_press = false;");`
+            this.tracer?.log("⚡ FSM would execute action: " + "output_press = false;");
         } // end of behavior for STARTUP_DELAY
     }
     
@@ -1338,21 +1354,79 @@ evaluateGuard = null;
             } // end of behavior for ROOT.<ChoicePoint>(INIT_CHOICE)
             
             // ROOT.<ChoicePoint>(INIT_CHOICE) behavior
-            // uml: else / { this.tracer?.edgeTransition("edge2"); } TransitionTo(RELEASED_STABLE)
+            // uml: else / { this.tracer?.edgeTransition("edge2"); } TransitionTo(WAIT_FIRST_PRESS)
             {
                 // Step 1: Exit states until we reach `ROOT` state (Least Common Ancestor for transition). Already at LCA, no exiting required.
                 
                 // Step 2: Transition action: `this.tracer?.edgeTransition("edge2");`.
                 this.tracer?.edgeTransition("edge2");
                 
-                // Step 3: Enter/move towards transition target `RELEASED_STABLE`.
-                this.#RELEASED_STABLE_enter();
+                // Step 3: Enter/move towards transition target `WAIT_FIRST_PRESS`.
+                this.#WAIT_FIRST_PRESS_enter();
                 
-                // Finish transition by calling pseudo state transition function.
-                this.#RELEASED_STABLE_InitialState_transition();
-                return; // event processing immediately stops when a transition finishes. No other behaviors for this state are checked.
+                // Step 4: complete transition. Ends event dispatch. No other behaviors are checked.
+                this.stateId = BeButton2Sm.StateId.WAIT_FIRST_PRESS;
+                // No ancestor handles event. Can skip nulling `ancestorEventHandler`.
+                return;
             } // end of behavior for ROOT.<ChoicePoint>(INIT_CHOICE)
         } // end of behavior for STARTUP_DELAY
+    }
+    
+    
+    ////////////////////////////////////////////////////////////////////////////////
+    // event handlers for state WAIT_FIRST_PRESS
+    ////////////////////////////////////////////////////////////////////////////////
+    
+    #WAIT_FIRST_PRESS_enter()
+    {
+        // setup trigger/event handlers
+        this.#currentStateExitHandler = this.#WAIT_FIRST_PRESS_exit;
+        this.#currentEventHandlers[BeButton2Sm.EventId.DO] = this.#WAIT_FIRST_PRESS_do;
+        
+        // WAIT_FIRST_PRESS behavior
+        // uml: enter / { this.tracer?.enterState('WAIT_FIRST_PRESS'); }
+        {
+            // Step 1: execute action `this.tracer?.enterState('WAIT_FIRST_PRESS');`
+            this.tracer?.enterState('WAIT_FIRST_PRESS');
+        } // end of behavior for WAIT_FIRST_PRESS
+    }
+    
+    #WAIT_FIRST_PRESS_exit()
+    {
+        // WAIT_FIRST_PRESS behavior
+        // uml: exit / { this.tracer?.exitState('WAIT_FIRST_PRESS'); }
+        {
+            // Step 1: execute action `this.tracer?.exitState('WAIT_FIRST_PRESS');`
+            this.tracer?.exitState('WAIT_FIRST_PRESS');
+        } // end of behavior for WAIT_FIRST_PRESS
+        
+        // adjust function pointers for this state's exit
+        this.#currentStateExitHandler = this.#ROOT_exit;
+        this.#currentEventHandlers[BeButton2Sm.EventId.DO] = null;  // no ancestor listens to this event
+    }
+    
+    #WAIT_FIRST_PRESS_do()
+    {
+        // No ancestor state handles `do` event.
+        
+        // WAIT_FIRST_PRESS behavior
+        // uml: do [this.tracer?.log("🛡️ User evaluating guard: " + "input_active") || this.evaluateGuard("input_active")] / { this.tracer?.edgeTransition("edge8"); } TransitionTo(PRESSED_DEBOUNCE)
+        if (this.tracer?.log("🛡️ User evaluating guard: " + "input_active") || this.evaluateGuard("input_active"))
+        {
+            // Step 1: Exit states until we reach `ROOT` state (Least Common Ancestor for transition).
+            this.#WAIT_FIRST_PRESS_exit();
+            
+            // Step 2: Transition action: `this.tracer?.edgeTransition("edge8");`.
+            this.tracer?.edgeTransition("edge8");
+            
+            // Step 3: Enter/move towards transition target `PRESSED_DEBOUNCE`.
+            this.#PRESSED_DEBOUNCE_enter();
+            
+            // Step 4: complete transition. Ends event dispatch. No other behaviors are checked.
+            this.stateId = BeButton2Sm.StateId.PRESSED_DEBOUNCE;
+            // No ancestor handles event. Can skip nulling `ancestorEventHandler`.
+            return;
+        } // end of behavior for WAIT_FIRST_PRESS
     }
     
     // Thread safe.
@@ -1371,9 +1445,10 @@ evaluateGuard = null;
             case BeButton2Sm.StateId.PRESSED_REPEAT: return "PRESSED_REPEAT";
             case BeButton2Sm.StateId.RELEASED_DEBOUNCE: return "RELEASED_DEBOUNCE";
             case BeButton2Sm.StateId.RELEASED_STABLE: return "RELEASED_STABLE";
-            case BeButton2Sm.StateId.SEQUENCE: return "SEQUENCE";
+            case BeButton2Sm.StateId.SEQUENCE_CONTINUE: return "SEQUENCE_CONTINUE";
             case BeButton2Sm.StateId.SEQUENCE_END: return "SEQUENCE_END";
             case BeButton2Sm.StateId.STARTUP_DELAY: return "STARTUP_DELAY";
+            case BeButton2Sm.StateId.WAIT_FIRST_PRESS: return "WAIT_FIRST_PRESS";
             default: return "?";
         }
     }

@@ -86,7 +86,7 @@ RELEASED_DEBOUNCE -right-> RELEASED_STABLE: [t2_ms > 50]
 ' Button is released. Wait for button press.
 RELEASED_STABLE -down-> PRESSED_DEBOUNCE: [input_active]
 
-SEQUENCE_CONTINUE --> SEQUENCE_END: [t2_ms > 500]
+SEQUENCE_CONTINUE --> SEQUENCE_END: [t2_ms > SEQ_RELEASE_MAX]
 
 SEQUENCE_END: enter / output_seq_end_event = true;
 
@@ -98,6 +98,7 @@ PRESSED_DEBOUNCE: enter / press_count++;
 PRESSED_DEBOUNCE -left-> PRESSED_STABLE: [t1_ms > 50]
 
 ' Button is pressed. Wait for button release.
+PRESSED_STABLE: do [press_count > 0 && t1_ms > SEQ_PRESS_MAX] / output_seq_end_event = true;
 PRESSED_STABLE -up-> RELEASED_DEBOUNCE: [! input_active]
 
 ' Button is still pressed. Wait for long press time.
